@@ -1,0 +1,102 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I/opt/homebrew/include",
+      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
+      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/model.o",
+      "src/model.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/vulkanEngine",
+    "file": "/Users/nielsbil/Dev/vulkanEngine/src/model.c",
+    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/model.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I/opt/homebrew/include",
+      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
+      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/main.o",
+      "src/main.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/vulkanEngine",
+    "file": "/Users/nielsbil/Dev/vulkanEngine/src/main.c",
+    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I/opt/homebrew/include",
+      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
+      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/vulkan/init.o",
+      "src/vulkan/init.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/vulkanEngine",
+    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/init.c",
+    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/init.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I/opt/homebrew/include",
+      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
+      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/vulkan/run.o",
+      "src/vulkan/run.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/vulkanEngine",
+    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/run.c",
+    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/run.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-std=c99",
+      "-Wall",
+      "-O3",
+      "-I/opt/homebrew/include",
+      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
+      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "obj/vulkan/setup.o",
+      "src/vulkan/setup.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/vulkanEngine",
+    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/setup.c",
+    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/setup.o"
+  }
+]
