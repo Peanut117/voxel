@@ -73,10 +73,10 @@ extern VkFence* inFlightFences;
 extern swapchainImageDetails swapchainDetails;
 
 static const Vertex vertices[] = {
-	{{-1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-    {{1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-    {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-    {{-1.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+	{{-1.0f, -1.0f, 0.0f}},
+    {{1.0f, -1.0f, 0.0f}},
+    {{1.0f, 1.0f, 0.0f}},
+    {{-1.0f, 1.0f, 0.0f}},
 };
 
 static const size_t vertexCount = sizeof(vertices) / sizeof(Vertex);
