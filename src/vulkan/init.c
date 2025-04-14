@@ -11,14 +11,13 @@
 
 #include "init.h"
 #include "define.h"
+#include "global.h"
 #include "vulkanGlobal.h"
 
 /***********Structs***********/
 
 /***********Constants***********/
 const char* WINDOW_TITLE = "Vulkan engine";
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
 
 const uint32_t instanceExtentionCount = 1;
 const char* instanceExtentions[] = {

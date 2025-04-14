@@ -19,7 +19,6 @@ typedef struct swapchainSupportDetails {
 
 typedef struct Vertex {
 	vec3 pos;
-	vec3 color;
 } Vertex;
 
 typedef struct QueueFamilyIndices {

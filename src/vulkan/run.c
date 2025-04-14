@@ -219,18 +219,9 @@ int updateUniformBuffer(uint32_t currentImage)
 {
 	uint64_t time = SDL_GetTicks();
 
-	// glm_rotate_z(GLM_MAT4_IDENTITY, (float)time / 100000 * 90.0f, ubo.model);
-    //
-	// glm_lookat((vec3){2.0f, 2.0f, 2.0f}, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 0.0f, 1.0f}, ubo.view);
-	//
-	// glm_perspective(45.0f, swapchainDetails.extent.width / (float)swapchainDetails.extent.height, 0.1f, 10.f, ubo.proj);
-
-    glm_mat4_identity(ubo.model);
-    glm_mat4_identity(ubo.view);
-    glm_mat4_identity(ubo.proj);
-
-
-	ubo.proj[1][1] *= -1;
+    ubo.resolution[0] = swapchainDetails.extent.width;
+    ubo.resolution[1] = swapchainDetails.extent.height;
+    ubo.time = (float)time/1000.f;
 
 	memcpy(uniformBufferPtr[currentImage], &ubo, sizeof(ubo));
 

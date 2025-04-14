@@ -1,0 +1,5 @@
+cd ../
+
+make
+
+bin/vulkan

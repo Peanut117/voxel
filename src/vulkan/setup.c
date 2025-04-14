@@ -339,7 +339,7 @@ int createDescriptorSetLayout(void)
 		.binding = 0,
 		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		.descriptorCount = 1,
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 		.pImmutableSamplers = NULL
 	};
 
@@ -532,11 +532,17 @@ int createUniformBuffers(void)
 
 	uniformBuffers = malloc(swapchainDetails.imageCount * sizeof(VkBuffer));
 	uniformBuffersMemory = malloc(swapchainDetails.imageCount * sizeof(VkDeviceMemory));
-	//uniformBufferPtr = (void*)malloc(swapchainDetails.imageCount * sizeof(void*));
+	// uniformBufferPtr = (void*)malloc(swapchainDetails.imageCount * sizeof(void*));
 
 	for(uint32_t i = 0; i < swapchainDetails.imageCount; i++)
 	{
-		createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &uniformBuffers[i], &uniformBuffersMemory[i]);
+		createBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            &uniformBuffers[i],
+            &uniformBuffersMemory[i]
+        );
 
 		VK_CHECK(vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBufferPtr[i]));
 	}
@@ -865,7 +871,7 @@ VkShaderModule createShaderModule(const char* fileName)
 VkVertexInputAttributeDescription* getVertexAttributeDescriptions(uint32_t* attributeCount)
 {
     // Define the number of attributes (e.g., position and color)
-    *attributeCount = 2;
+    *attributeCount = 1;
 
     // Allocate memory for the attribute descriptions
     VkVertexInputAttributeDescription* attributeDescriptions = malloc(*attributeCount * sizeof(VkVertexInputAttributeDescription));
@@ -876,14 +882,6 @@ VkVertexInputAttributeDescription* getVertexAttributeDescriptions(uint32_t* attr
         .binding = 0, // Binding index (matches the binding description)
         .format = VK_FORMAT_R32G32B32_SFLOAT, // Format of the position data (vec3)
         .offset = offsetof(Vertex, pos) // Offset of the position data in the Vertex struct
-    };
-
-    // Color attribute
-    attributeDescriptions[1] = (VkVertexInputAttributeDescription) {
-        .location = 1, // Location in the vertex shader
-        .binding = 0, // Binding index (matches the binding description)
-        .format = VK_FORMAT_R32G32B32_SFLOAT, // Format of the color data (vec3)
-        .offset = offsetof(Vertex, color) // Offset of the color data in the Vertex struct
     };
 
     return attributeDescriptions;

@@ -7,9 +7,8 @@
 
 /********************Structs*******************/
 typedef struct UniformBufferObject {
-	mat4 model;
-	mat4 view;
-	mat4 proj;
+	ivec2 resolution;
+    float time;
 } UniformBufferObject;
 
 /********************Defines*******************/

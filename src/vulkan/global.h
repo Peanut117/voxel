@@ -7,6 +7,9 @@
 /********************Global Variables*******************/
 extern UniformBufferObject ubo;
 
+static const int WINDOW_WIDTH = 800;
+static const int WINDOW_HEIGHT = 600;
+
 /********************Functions*******************/
 bool processInput(SDL_Event event);
 
