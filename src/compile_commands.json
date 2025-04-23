@@ -2,101 +2,134 @@
   {
     "arguments": [
       "/usr/bin/clang",
-      "-g",
       "-std=c99",
       "-Wall",
-      "-O3",
-      "-I/opt/homebrew/include",
-      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
-      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Wno-typedef-redefinition",
       "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
       "-c",
       "-o",
-      "obj/model.o",
-      "src/model.c"
+      "obj/pis/validationlayers.o",
+      "src/pis/validationlayers.c"
     ],
-    "directory": "/Users/nielsbil/Dev/vulkanEngine",
-    "file": "/Users/nielsbil/Dev/vulkanEngine/src/model.c",
-    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/model.o"
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/validationlayers.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/validationlayers.o"
   },
   {
     "arguments": [
       "/usr/bin/clang",
-      "-g",
       "-std=c99",
       "-Wall",
-      "-O3",
-      "-I/opt/homebrew/include",
-      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
-      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
+      "-Wno-typedef-redefinition",
       "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/images.o",
+      "src/pis/images.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/images.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/images.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/initializers.o",
+      "src/pis/initializers.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/initializers.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/initializers.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/pipelines.o",
+      "src/pis/pipelines.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/pipelines.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/pipelines.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/engine.o",
+      "src/pis/engine.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/engine.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/engine.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/descriptors.o",
+      "src/pis/descriptors.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/descriptors.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/descriptors.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-g",
+      "-DDEBUG",
       "-c",
       "-o",
       "obj/main.o",
       "src/main.c"
     ],
-    "directory": "/Users/nielsbil/Dev/vulkanEngine",
-    "file": "/Users/nielsbil/Dev/vulkanEngine/src/main.c",
-    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/main.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-g",
-      "-std=c99",
-      "-Wall",
-      "-O3",
-      "-I/opt/homebrew/include",
-      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
-      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "obj/vulkan/init.o",
-      "src/vulkan/init.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/vulkanEngine",
-    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/init.c",
-    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/init.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-g",
-      "-std=c99",
-      "-Wall",
-      "-O3",
-      "-I/opt/homebrew/include",
-      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
-      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "obj/vulkan/run.o",
-      "src/vulkan/run.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/vulkanEngine",
-    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/run.c",
-    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/run.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-g",
-      "-std=c99",
-      "-Wall",
-      "-O3",
-      "-I/opt/homebrew/include",
-      "-I/opt/homebrew/Cellar/vulkan-loader/1.4.310/../../../opt/vulkan-headers/include",
-      "-I/opt/homebrew/Cellar/cglm/0.9.6/include",
-      "-Iinclude",
-      "-c",
-      "-o",
-      "obj/vulkan/setup.o",
-      "src/vulkan/setup.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/vulkanEngine",
-    "file": "/Users/nielsbil/Dev/vulkanEngine/src/vulkan/setup.c",
-    "output": "/Users/nielsbil/Dev/vulkanEngine/obj/vulkan/setup.o"
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/main.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/main.o"
   }
 ]

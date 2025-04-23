@@ -1,28 +1,44 @@
-#include "vulkan/init.h"
-#include "vulkan/setup.h"
-#include "vulkan/run.h"
+#include <malloc/_malloc_type.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "vulkan/global.h"
+#include "pis/engine.h"
+
+bool processInput(void)
+{
+	SDL_Event event;
+
+	while(SDL_PollEvent(&event) != 0)
+	{
+		//User requests quit
+		if(event.type == SDL_EVENT_QUIT)
+			return false;
+	}
+
+	return true;
+}
 
 int main(void)
 {
-	initVulkan();
+    PisEngine* pis = calloc(1, sizeof(PisEngine));
+    if(pis == NULL)
+    {
+        fprintf(stderr, "Failed to allocate\n");
+        return -1;
+    }
 
-	setupVulkan();
+    PisEngineInitialize(pis);
 
-	while(processMainInput())
-	{
-		drawFrame();
-	}
+    while(processInput())
+    {
+        PisEngineDraw(pis);
+    }
 
-	cleanupSetupVulkan();
+    PisEngineCleanup(pis);
 
-	cleanupInitVulkan();
+    free(pis);
+
+    printf("Program finished\n");
 
 	return 0;
-}
-
-bool processInput(SDL_Event event)
-{
-	return true;
 }

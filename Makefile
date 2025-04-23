@@ -1,9 +1,12 @@
 # Compiler and base flags
 CC = clang
-BASE_CFLAGS= -std=c99 -Wall -Iinclude `pkg-config --cflags vulkan sdl3`
-BASE_LDFLAGS= `pkg-config --libs vulkan sdl3`
+BASE_CFLAGS= -std=c99 -Wall -Wno-typedef-redefinition -Iinclude `pkg-config --cflags sdl3` \
+			 -DVK_USE_PLATFORM_MACOS_MVK
+BASE_LDFLAGS= `pkg-config --libs sdl3`
+# BASE_CFLAGS= -std=c99 -Wall -Wno-typedef-redefinition -Iinclude `pkg-config --cflags vulkan sdl3`
+# BASE_LDFLAGS= `pkg-config --libs vulkan sdl3`
 
-CFLAGS= $(BASE_CFLAGS) -g
+CFLAGS= $(BASE_CFLAGS) -g -DDEBUG
 LDFLAGS= $(BASE_LDFLAGS)
 
 # Directories
