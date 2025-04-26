@@ -7,6 +7,7 @@
       "-Wno-typedef-redefinition",
       "-Iinclude",
       "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
       "-g",
       "-DDEBUG",
       "-c",
@@ -26,6 +27,7 @@
       "-Wno-typedef-redefinition",
       "-Iinclude",
       "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
       "-g",
       "-DDEBUG",
       "-c",
@@ -45,6 +47,7 @@
       "-Wno-typedef-redefinition",
       "-Iinclude",
       "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
       "-g",
       "-DDEBUG",
       "-c",
@@ -64,6 +67,47 @@
       "-Wno-typedef-redefinition",
       "-Iinclude",
       "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/volk.o",
+      "src/pis/volk.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/volk.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/volk.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-g",
+      "-DDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/vkinitialize.o",
+      "src/pis/vkinitialize.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/vkinitialize.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/vkinitialize.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
       "-g",
       "-DDEBUG",
       "-c",
@@ -74,62 +118,5 @@
     "directory": "/Users/nielsbil/Dev/voxel",
     "file": "/Users/nielsbil/Dev/voxel/src/pis/pipelines.c",
     "output": "/Users/nielsbil/Dev/voxel/obj/pis/pipelines.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-std=c99",
-      "-Wall",
-      "-Wno-typedef-redefinition",
-      "-Iinclude",
-      "-I/opt/homebrew/include",
-      "-g",
-      "-DDEBUG",
-      "-c",
-      "-o",
-      "obj/pis/engine.o",
-      "src/pis/engine.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/voxel",
-    "file": "/Users/nielsbil/Dev/voxel/src/pis/engine.c",
-    "output": "/Users/nielsbil/Dev/voxel/obj/pis/engine.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-std=c99",
-      "-Wall",
-      "-Wno-typedef-redefinition",
-      "-Iinclude",
-      "-I/opt/homebrew/include",
-      "-g",
-      "-DDEBUG",
-      "-c",
-      "-o",
-      "obj/pis/descriptors.o",
-      "src/pis/descriptors.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/voxel",
-    "file": "/Users/nielsbil/Dev/voxel/src/pis/descriptors.c",
-    "output": "/Users/nielsbil/Dev/voxel/obj/pis/descriptors.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang",
-      "-std=c99",
-      "-Wall",
-      "-Wno-typedef-redefinition",
-      "-Iinclude",
-      "-I/opt/homebrew/include",
-      "-g",
-      "-DDEBUG",
-      "-c",
-      "-o",
-      "obj/main.o",
-      "src/main.c"
-    ],
-    "directory": "/Users/nielsbil/Dev/voxel",
-    "file": "/Users/nielsbil/Dev/voxel/src/main.c",
-    "output": "/Users/nielsbil/Dev/voxel/obj/main.o"
   }
 ]

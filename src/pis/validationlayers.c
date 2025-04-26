@@ -75,7 +75,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     return VK_FALSE;
 }
 
-void SetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger)
+void SetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger, bool intoFile)
 {
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -91,11 +91,16 @@ void SetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMes
 
     VK_CHECK(vkCreateDebugUtilsMessengerEXT(instance, &createInfo, NULL, debugMessenger));
 
-    validationDebugFile = fopen("ValidationLayer.txt", "w");
-    if(validationDebugFile == NULL)
+    if(intoFile)
     {
-        fprintf(stderr, "Failed to open file\n");
-        exit(-1);
+        validationDebugFile = fopen("ValidationLayer.txt", "w");
+        if(validationDebugFile == NULL)
+        {
+            fprintf(stderr, "Failed to open file\n");
+            exit(-1);
+        }
+    } else {
+        validationDebugFile = stderr;
     }
 }
 

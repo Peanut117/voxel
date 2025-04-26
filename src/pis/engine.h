@@ -8,6 +8,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
+#include "pipelines.h"
+#include "descriptors.h"
 #include "images.h"
 
 typedef struct QueueFamilyIndices {
@@ -45,6 +47,10 @@ typedef struct PisVulkanInstance {
 
     QueueFamilyIndices indices;
     VkQueue computeQueue;
+
+    Pipeline compute;
+
+    Descriptor drawImageDescriptor;
 
     FrameData frames[FRAME_OVERLAP];
 

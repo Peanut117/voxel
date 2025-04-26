@@ -81,7 +81,7 @@ void InitVulkan(PisEngine* pis)
     volkLoadInstance(pis->vk.instance);
 
 #ifdef DEBUG
-    SetupDebugMessenger(pis->vk.instance, &pis->vk.debugMessenger);
+    SetupDebugMessenger(pis->vk.instance, &pis->vk.debugMessenger, false);
 #endif
 
     // Create the vulkan rendering surface with SDL

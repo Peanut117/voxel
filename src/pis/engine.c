@@ -6,8 +6,11 @@
 
 #include "engine.h"
 
+#include "descriptors.h"
 #include "validationlayers.h"
 #include "initializers.h"
+#include "pipelines.h"
+#include "descriptors.h"
 #include "images.h"
 #include "pisdef.h"
 
@@ -24,6 +27,8 @@ void InitWindow(PisEngine* pis, uint32_t windowWidth, uint32_t windowHeight);
 void InitVulkan(PisEngine* pis);
 void InitCommands(PisEngine* pis);
 void InitSyncStructures(PisEngine* pis);
+void InitDescriptors(PisEngine* pis);
+void InitPipeline(PisEngine* pis);
 
 /* =================================Helper functions================================ */
 void DrawBackground(VkCommandBuffer cmd, PisEngine* pis);
@@ -35,13 +40,19 @@ void PisEngineInitialize(PisEngine* pis)
     pis->frameNumber = 0;
     pis->stopRendering = false;
 
-    InitWindow(pis, 1920, 1080);
+    InitWindow(pis, 800, 600);
 
     InitVulkan(pis);
 
     InitCommands(pis);
 
     InitSyncStructures(pis);
+
+    printf("Ho\n");
+    InitDescriptors(pis);
+
+    InitPipeline(pis);
+    printf("Ho\n");
 }
 
 void PisEngineDraw(PisEngine* pis)
@@ -71,7 +82,13 @@ void PisEngineDraw(PisEngine* pis)
     // Make the swapchain image into writable mode before rendering
     TransitionImage(cmd, pis->vk.drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    DrawBackground(cmd, pis);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pis->vk.compute.pipeline);
+
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+                            pis->vk.compute.layout, 0, 1,
+                            pis->vk.drawImageDescriptor.sets, 0, NULL);
+
+    vkCmdDispatch(cmd, pis->vk.drawImage.extent.width, pis->vk.drawImage.extent.height, pis->vk.drawImage.extent.depth);
 
     // Make the image presentable
     TransitionImage(cmd, pis->vk.drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -111,26 +128,39 @@ void PisEngineDraw(PisEngine* pis)
 
 void PisEngineCleanup(PisEngine* pis)
 {
-    vkDeviceWaitIdle(pis->vk.device);
+    VkDevice device = pis->vk.device;
+
+    vkDeviceWaitIdle(device);
+
+    vkDestroyDescriptorPool(device, pis->vk.drawImageDescriptor.pool, NULL);
+
+    vkDestroyDescriptorSetLayout(device, pis->vk.drawImageDescriptor.layout, NULL);
+
+    vkDestroyPipeline(device, pis->vk.compute.pipeline, NULL);
+    vkDestroyPipelineLayout(device, pis->vk.compute.layout, NULL);
+
+    vkDestroyImageView(device, pis->vk.drawImage.view, NULL);
+    vkDestroyImage(device, pis->vk.drawImage.image, NULL);
+    vkFreeMemory(device, pis->vk.drawImage.memory, NULL);
 
     for(uint32_t i = 0; i < FRAME_OVERLAP; i++)
     {
-        vkDestroyFence(pis->vk.device, pis->vk.frames[i].renderFence, NULL);
-        vkDestroySemaphore(pis->vk.device, pis->vk.frames[i].swapchainSemaphore, NULL);
-        vkDestroySemaphore(pis->vk.device, pis->vk.frames[i].renderSemaphore, NULL);
-        vkDestroyCommandPool(pis->vk.device, pis->vk.frames[i].commandPool, NULL);
+        vkDestroyFence(device, pis->vk.frames[i].renderFence, NULL);
+        vkDestroySemaphore(device, pis->vk.frames[i].swapchainSemaphore, NULL);
+        vkDestroySemaphore(device, pis->vk.frames[i].renderSemaphore, NULL);
+        vkDestroyCommandPool(device, pis->vk.frames[i].commandPool, NULL);
     }
 
-    vkDestroySwapchainKHR(pis->vk.device, pis->vk.swapchain, NULL);
+    vkDestroySwapchainKHR(device, pis->vk.swapchain, NULL);
     for(uint32_t i = 0; i < pis->vk.swapchainImageCount; i++)
     {
-        vkDestroyImageView(pis->vk.device, pis->vk.swapchainImageViews[i], NULL);
+        vkDestroyImageView(device, pis->vk.swapchainImageViews[i], NULL);
     }
 
     free(pis->vk.swapchainImages);
     free(pis->vk.swapchainImageViews);
 
-    vkDestroyDevice(pis->vk.device, NULL);
+    vkDestroyDevice(device, NULL);
 
     vkDestroySurfaceKHR(pis->vk.instance, pis->vk.surface, NULL);
 
@@ -208,6 +238,40 @@ void InitSyncStructures(PisEngine* pis)
         VK_CHECK(vkCreateSemaphore(pis->vk.device, &semaphoreCreateInfo, NULL, &pis->vk.frames[i].swapchainSemaphore));
         VK_CHECK(vkCreateSemaphore(pis->vk.device, &semaphoreCreateInfo, NULL, &pis->vk.frames[i].renderSemaphore));
     }
+}
+
+void InitDescriptors(PisEngine* pis)
+{
+    CreateDescriptorSetLayout(pis->vk.device, &pis->vk.drawImageDescriptor);
+    printf("Set layout created\n");
+
+    uint32_t descriptorSetSpace = 10;
+    CreateDescriptorPool(pis->vk.device, &pis->vk.drawImageDescriptor, descriptorSetSpace);
+    printf("Pool layout created\n");
+
+    AllocateDescriptorSet(pis->vk.device, &pis->vk.drawImageDescriptor);
+    printf("set allocated created\n");
+
+    VkDescriptorImageInfo imgInfo = {0};
+    imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    imgInfo.imageView = pis->vk.drawImage.view;
+
+    VkWriteDescriptorSet drawImageWrite = {0};
+    drawImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    drawImageWrite.pNext = NULL;
+    drawImageWrite.dstBinding = 0;
+    drawImageWrite.dstSet = pis->vk.drawImageDescriptor.sets[0];
+    drawImageWrite.descriptorCount = 1;
+    drawImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    drawImageWrite.pImageInfo = &imgInfo;
+
+    vkUpdateDescriptorSets(pis->vk.device, 1, &drawImageWrite, 0, NULL);
+}
+
+void InitPipeline(PisEngine* pis)
+{
+    CreateComputePipelineLayout(pis->vk.device, &pis->vk.drawImageDescriptor, &pis->vk.compute.layout);
+    CreateComputePipeline(pis->vk.device, pis->vk.compute.layout, &pis->vk.compute.pipeline);
 }
 
 void DrawBackground(VkCommandBuffer cmd, PisEngine* pis)

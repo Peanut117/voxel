@@ -16,7 +16,7 @@ const char** GetValidationLayers();
 
 bool CheckValidationLayerSupport();
 
-void SetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger);
+void SetupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger, bool intoFile);
 
 void DestroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger);
 
