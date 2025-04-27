@@ -3,6 +3,7 @@
 #include "engine.h"
 #include "descriptors.h"
 #include "pisdef.h"
+#include "vulkan/vulkan_core.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -53,15 +54,13 @@ VkShaderModule CreateShaderModule(VkDevice device, const char* fileName)
 	return shaderModule;
 }
 
-void CreateComputePipelineLayout(VkDevice device, Descriptor* descriptor, VkPipelineLayout* layout)
+void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorCount, VkPipelineLayout* layout)
 {
     VkPipelineLayoutCreateInfo layoutCreateInfo = {0};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutCreateInfo.pNext = NULL;
-    layoutCreateInfo.setLayoutCount = 1;
-    layoutCreateInfo.pSetLayouts = &descriptor->layout;
-    // layoutCreateInfo.;
-    // layoutCreateInfo.;
+    layoutCreateInfo.setLayoutCount = descriptorCount;
+    layoutCreateInfo.pSetLayouts = descriptorLayouts;
 
     VK_CHECK(vkCreatePipelineLayout(device,
                                     &layoutCreateInfo,

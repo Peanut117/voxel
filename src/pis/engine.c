@@ -6,6 +6,7 @@
 
 #include "engine.h"
 
+#include "buffers.h"
 #include "descriptors.h"
 #include "validationlayers.h"
 #include "initializers.h"
@@ -54,20 +55,32 @@ void PisEngineInitialize(PisEngine* pis)
     InitPipeline(pis);
 }
 
+void UpdateUniformBuffer(PisEngine* pis)
+{
+    int currentFrame = pis->frameNumber % FRAME_OVERLAP;
+    UniformBufferObject ubo;
+
+    ubo.time = (float)SDL_GetTicks() / 100000.f;
+    ubo.time = 1;
+
+    memcpy(pis->vk.uboBuffer[currentFrame].ptr, &ubo, sizeof(ubo));
+}
+
 void PisEngineDraw(PisEngine* pis)
 {
-    FrameData currentFrame = pis->vk.frames[pis->frameNumber % FRAME_OVERLAP];
+    int currentFrame = pis->frameNumber % FRAME_OVERLAP;
+    FrameData currentFrameData = pis->vk.frames[currentFrame];
 
     // Wait until the gpu has finished rendering the last frame. Timeout of 1 second
-    VK_CHECK(vkWaitForFences(pis->vk.device, 1, &currentFrame.renderFence, true, 1000000000));
-    VK_CHECK(vkResetFences(pis->vk.device, 1, &currentFrame.renderFence));
+    VK_CHECK(vkWaitForFences(pis->vk.device, 1, &currentFrameData.renderFence, true, 1000000000));
+    VK_CHECK(vkResetFences(pis->vk.device, 1, &currentFrameData.renderFence));
 
     // Request image from the swapchain
     uint32_t swapchainImageIndex;
     VK_CHECK(vkAcquireNextImageKHR(pis->vk.device, pis->vk.swapchain, 1000000000,
-                                   currentFrame.swapchainSemaphore, NULL, &swapchainImageIndex));
+                                   currentFrameData.swapchainSemaphore, NULL, &swapchainImageIndex));
 
-    VkCommandBuffer cmd = currentFrame.mainCommandBuffer;
+    VkCommandBuffer cmd = currentFrameData.mainCommandBuffer;
 
     VK_CHECK(vkResetCommandBuffer(cmd, 0));
 
@@ -100,14 +113,16 @@ void PisEngineDraw(PisEngine* pis)
 
     VK_CHECK(vkEndCommandBuffer(cmd));
 
+    UpdateUniformBuffer(pis);
+
     VkCommandBufferSubmitInfo cmdInfo = CommandBufferSubmitInfo(cmd);
 
-    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrame.swapchainSemaphore);
-    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, currentFrame.renderSemaphore);
+    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrameData.swapchainSemaphore);
+    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, currentFrameData.renderSemaphore);
 
     VkSubmitInfo2 submit = SubmitInfo(&cmdInfo, &signalInfo, &waitInfo);
 
-    VK_CHECK(vkQueueSubmit2(pis->vk.computeQueue, 1, &submit, currentFrame.renderFence));
+    VK_CHECK(vkQueueSubmit2(pis->vk.computeQueue, 1, &submit, currentFrameData.renderFence));
 
     VkPresentInfoKHR presentInfo = {0};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -115,7 +130,7 @@ void PisEngineDraw(PisEngine* pis)
     presentInfo.pSwapchains = &pis->vk.swapchain;
     presentInfo.swapchainCount = 1;
 
-    presentInfo.pWaitSemaphores = &currentFrame.renderSemaphore;
+    presentInfo.pWaitSemaphores = &currentFrameData.renderSemaphore;
     presentInfo.waitSemaphoreCount = 1;
 
     presentInfo.pImageIndices = &swapchainImageIndex;
@@ -241,14 +256,22 @@ void InitSyncStructures(PisEngine* pis)
 
 void InitDescriptors(PisEngine* pis)
 {
-    CreateDescriptorSetLayout(pis->vk.device, &pis->vk.drawImageDescriptor);
+    DescriptorLayout descriptorLayouts[] = {
+        {
+            .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .binding = 0,
+            .flags = VK_SHADER_STAGE_COMPUTE_BIT
+        },
+    };
+
+    CreateDescriptorSetLayout(pis->vk.device, &pis->vk.drawImageDescriptor, descriptorLayouts, 1);
     printf("Set layout created\n");
 
-    uint32_t descriptorSetSpace = 10;
-    CreateDescriptorPool(pis->vk.device, &pis->vk.drawImageDescriptor, descriptorSetSpace);
+    PoolSize poolSize[] = { { .type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .ratio = 1.0f } };
+    CreateDescriptorPool(pis->vk.device, &pis->vk.drawImageDescriptor, poolSize, 1, 10);
     printf("Pool layout created\n");
 
-    AllocateDescriptorSet(pis->vk.device, &pis->vk.drawImageDescriptor);
+    AllocateDescriptorSets(pis->vk.device, &pis->vk.drawImageDescriptor, 1);
     printf("set allocated created\n");
 
     VkDescriptorImageInfo imgInfo = {0};
@@ -265,11 +288,59 @@ void InitDescriptors(PisEngine* pis)
     drawImageWrite.pImageInfo = &imgInfo;
 
     vkUpdateDescriptorSets(pis->vk.device, 1, &drawImageWrite, 0, NULL);
+
+/* ======================UNIFORM BUFFER===================*/
+    DescriptorLayout uboDescriptorLayouts[] = {
+        {
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .binding = 1,
+            .flags = VK_SHADER_STAGE_COMPUTE_BIT
+        }
+    };
+
+    CreateDescriptorSetLayout(pis->vk.device, &pis->vk.uboDescriptor, uboDescriptorLayouts, 1);
+
+    CreateDescriptorPool(pis->vk.device, &pis->vk.uboDescriptor,
+                         &(PoolSize){ .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .ratio = 0.6f },
+                         1, 10);
+
+    AllocateDescriptorSets(pis->vk.device, &pis->vk.uboDescriptor, FRAME_OVERLAP);
+
+	for(uint32_t i = 0; i < FRAME_OVERLAP; i++)
+	{
+        pis->vk.uboBuffer[i].ptr = (void*)malloc(FRAME_OVERLAP * sizeof(void*));
+        CreateBuffer(pis->vk.device, pis->vk.physicalDevice,
+                     sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pis->vk.uboBuffer[i]);
+
+        VK_CHECK(vkMapMemory(pis->vk.device, pis->vk.uboBuffer[i].memory, 0, sizeof(UniformBufferObject),
+                             0, pis->vk.uboBuffer[i].ptr));
+
+        VkDescriptorBufferInfo bufferInfo = {
+            .buffer = pis->vk.uboBuffer[i].buffer,
+            .offset = 0,
+            .range = sizeof(UniformBufferObject)
+        };
+
+        VkWriteDescriptorSet descriptorWrite = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = pis->vk.uboDescriptor.sets[i],
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .pBufferInfo = &bufferInfo,
+            .pImageInfo = NULL,
+            .pTexelBufferView = NULL
+        };
+
+        vkUpdateDescriptorSets(pis->vk.device, 1, &descriptorWrite, 0, NULL);
+    }
 }
 
 void InitPipeline(PisEngine* pis)
 {
-    CreateComputePipelineLayout(pis->vk.device, &pis->vk.drawImageDescriptor, &pis->vk.compute.layout);
+    CreateComputePipelineLayout(pis->vk.device, &pis->vk.drawImageDescriptor.layout, 1, &pis->vk.compute.layout);
     CreateComputePipeline(pis->vk.device, pis->vk.compute.layout, &pis->vk.compute.pipeline);
 }
 

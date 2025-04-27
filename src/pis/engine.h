@@ -58,6 +58,9 @@ typedef struct PisVulkanInstance {
     Pipeline compute;
 
     Descriptor drawImageDescriptor;
+    Descriptor uboDescriptor;
+
+    Buffer uboBuffer[FRAME_OVERLAP];
 
     FrameData frames[FRAME_OVERLAP];
 

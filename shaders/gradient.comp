@@ -7,6 +7,10 @@ layout (local_size_x = 1, local_size_y = 1) in;
 //descriptor bindings for the pipeline
 layout(rgba16f,set = 0, binding = 0) uniform image2D image;
 
+layout(binding = 1) uniform UniformBufferObject {
+    float time;
+} ubo;
+
 const int MAX_RAY_STEPS = 128;
 
 const float PI = 3.14159265359;
@@ -45,7 +49,8 @@ void main()
         // DO
         if(currentVoxel == VOXEL)
         {
-            color = vec4(1.0, 0.0, 0.0, 1.0);
+            color = vec4(sin(ubo.time), 0.0, 0.0, 1.0);
+            imageStore(image, texelCoord, color);
             return;
         }
 

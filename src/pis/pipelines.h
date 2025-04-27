@@ -3,14 +3,12 @@
 
 #include "volk.h"
 
-#include "descriptors.h"
-
 typedef struct Pipeline {
     VkPipeline pipeline;
     VkPipelineLayout layout;
 } Pipeline;
 
-void CreateComputePipelineLayout(VkDevice device, Descriptor* descriptor, VkPipelineLayout* layout);
+void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorCount, VkPipelineLayout* layout);
 
 void CreateComputePipeline(VkDevice device, VkPipelineLayout layout, VkPipeline* computePipeline);
 
