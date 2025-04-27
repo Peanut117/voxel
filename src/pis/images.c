@@ -2,23 +2,7 @@
 #include "initializers.h"
 #include "pisdef.h"
 #include "vulkan/vulkan_core.h"
-
-uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties, VkPhysicalDevice pDevice)
-{
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(pDevice, &memProperties);
-
-	for(uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-	{
-		if((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-		{
-			return i;
-		}
-	}
-
-	fprintf(stderr, "Failed to find suitable memory type :(\n");
-	exit(EXIT_FAILURE);
-}
+#include "buffers.h"
 
 void CreateImage(VkDevice device,
                  VkPhysicalDevice pDevice,
@@ -38,7 +22,7 @@ void CreateImage(VkDevice device,
     VkMemoryAllocateInfo allocInfo = {
 		.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		.allocationSize = memRequirements.size,
-		.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties, pDevice),
+		.memoryTypeIndex = FindMemoryType(pDevice, memRequirements.memoryTypeBits, properties),
 	};
 
     if (vkAllocateMemory(device, &allocInfo, NULL, imageMemory) != VK_SUCCESS) {

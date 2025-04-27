@@ -27,6 +27,7 @@ void InitWindow(PisEngine* pis, uint32_t windowWidth, uint32_t windowHeight);
 void InitVulkan(PisEngine* pis);
 void InitCommands(PisEngine* pis);
 void InitSyncStructures(PisEngine* pis);
+void InitBuffers(PisEngine* pis);
 void InitDescriptors(PisEngine* pis);
 void InitPipeline(PisEngine* pis);
 
@@ -48,11 +49,9 @@ void PisEngineInitialize(PisEngine* pis)
 
     InitSyncStructures(pis);
 
-    printf("Ho\n");
     InitDescriptors(pis);
 
     InitPipeline(pis);
-    printf("Ho\n");
 }
 
 void PisEngineDraw(PisEngine* pis)

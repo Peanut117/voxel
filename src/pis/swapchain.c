@@ -1,6 +1,7 @@
 #include "swapchain.h"
 #include "initializers.h"
 #include "pisdef.h"
+#include "vulkan/vulkan_core.h"
 #include <limits.h>
 
 void CreateSwapchain(PisEngine* pis, uint32_t width, uint32_t height)
@@ -73,7 +74,7 @@ void CreateSwapchain(PisEngine* pis, uint32_t width, uint32_t height)
 		.imageColorSpace = pis->vk.swapchainColorSpace,
 		.imageExtent = pis->vk.swapchainExtent,
 		.imageArrayLayers = 1,
-		.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		.queueFamilyIndexCount = 0,
 		.pQueueFamilyIndices = NULL,

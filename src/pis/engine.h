@@ -11,6 +11,9 @@
 #include "pipelines.h"
 #include "descriptors.h"
 #include "images.h"
+#include "buffers.h"
+
+#include "cglm/cglm.h"
 
 typedef struct QueueFamilyIndices {
     uint32_t computeFamilyIndex;
@@ -24,6 +27,10 @@ typedef struct FrameData {
     VkSemaphore swapchainSemaphore, renderSemaphore;
     VkFence renderFence;
 } FrameData;
+
+typedef struct UniformBufferObject {
+    float time;
+} UniformBufferObject;
 
 enum { FRAME_OVERLAP = 2 };
 
@@ -65,6 +72,7 @@ typedef struct PisEngine {
     uint32_t frameNumber;
     bool stopRendering;
     VkExtent2D windowExtent;
+    UniformBufferObject ubo;
 } PisEngine;
 
 void PisEngineInitialize(PisEngine* pis);
