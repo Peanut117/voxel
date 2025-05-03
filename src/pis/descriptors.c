@@ -4,67 +4,39 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void CreateDescriptorSetLayout(VkDevice device, Descriptor* descriptor, DescriptorLayout* descriptorLayout, uint32_t layoutCount)
+void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* layout, VkDescriptorSetLayoutBinding* descriptorLayoutBindings, uint32_t bindingCount)
 {
-    // Make a function to add these easily
-    descriptor->binding = malloc(sizeof(VkDescriptorSetLayoutBinding) * layoutCount);
-    descriptor->bindingCount = layoutCount;
-
-    for(uint32_t i = 0; i < layoutCount; i++)
-    {
-        descriptor->binding[i].binding = descriptorLayout[i].binding;
-        descriptor->binding[i].descriptorType = descriptorLayout[i].type;
-        descriptor->binding[i].descriptorCount = 1;
-        descriptor->binding[i].stageFlags = descriptorLayout[i].flags;
-    }
-
     VkDescriptorSetLayoutCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext = NULL,
         .flags = 0,
-        .bindingCount = descriptor->bindingCount,
-        .pBindings = descriptor->binding
+        .bindingCount = bindingCount,
+        .pBindings = descriptorLayoutBindings
     };
 
-    VK_CHECK(vkCreateDescriptorSetLayout(device, &createInfo, NULL, &descriptor->layout));
+    VK_CHECK(vkCreateDescriptorSetLayout(device, &createInfo, NULL, layout));
 }
 
-void CreateDescriptorPool(VkDevice device, Descriptor* descriptor, PoolSize* poolSize, uint32_t poolSizeCount, uint32_t maxSets)
+void CreateDescriptorPool(VkDevice device, VkDescriptorPool* pool, VkDescriptorPoolSize* poolSizes, uint32_t poolSizeCount, uint32_t maxSets)
 {
-    VkDescriptorPoolSize poolSizes[poolSizeCount];
-    for(uint32_t i = 0; i < poolSizeCount; i++)
-    {
-        poolSizes[i].type = poolSize[i].type;
-        poolSizes[i].descriptorCount = (maxSets * poolSize[i].ratio);
-    }
-
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-        .maxSets = maxSets,
         .poolSizeCount = poolSizeCount,
-        .pPoolSizes = poolSizes
+        .pPoolSizes = poolSizes,
+        .maxSets = maxSets,
     };
 
-    VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolInfo, NULL, &descriptor->pool));
+    VK_CHECK(vkCreateDescriptorPool(device, &descriptorPoolInfo, NULL, pool));
 }
 
-void AllocateDescriptorSets(VkDevice device, Descriptor* descriptor, uint32_t descriptorSetCount)
+void AllocateDescriptorSets(VkDevice device, Descriptor* descriptor)
 {
-    // Oei oei oei, dit moet wat netter
-    descriptor->sets = malloc(sizeof(VkDescriptorSet) * descriptorSetCount);
-
     VkDescriptorSetAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;
     allocInfo.descriptorPool = descriptor->pool;
-    allocInfo.descriptorSetCount = descriptorSetCount;
-    VkDescriptorSetLayout layouts[descriptorSetCount];
-    for(uint32_t i = 0; i < descriptorSetCount; i++)
-    {
-        layouts[i] = descriptor->layout;
-    }
-    allocInfo.pSetLayouts = layouts;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &descriptor->layout;
 
-    VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, descriptor->sets));
+    VK_CHECK(vkAllocateDescriptorSets(device, &allocInfo, &descriptor->set));
 }

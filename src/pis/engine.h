@@ -30,9 +30,9 @@ typedef struct FrameData {
 
 typedef struct UniformBufferObject {
     float time;
+    mat4 hi;
+    mat4 bufferbuffer;
 } UniformBufferObject;
-
-enum { FRAME_OVERLAP = 2 };
 
 typedef struct PisVulkanInstance {
     VkInstance instance;
@@ -57,12 +57,11 @@ typedef struct PisVulkanInstance {
 
     Pipeline compute;
 
-    Descriptor drawImageDescriptor;
-    Descriptor uboDescriptor;
+    Descriptor descriptor;
 
-    Buffer uboBuffer[FRAME_OVERLAP];
+    Buffer uboBuffer;
 
-    FrameData frames[FRAME_OVERLAP];
+    FrameData* frames;
 
     #ifdef DEBUG
     VkDebugUtilsMessengerEXT debugMessenger;

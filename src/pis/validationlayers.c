@@ -1,7 +1,8 @@
-#include "validationlayers.h"
+#ifdef DEBUG
 
+#include "validationlayers.h"
 #include "pisdef.h"
-#include "vulkan/vulkan_core.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,3 +110,5 @@ void DestroyDebugUtilsMessenger(VkInstance instance, VkDebugUtilsMessengerEXT de
     fclose(validationDebugFile);
     vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, NULL);
 }
+
+#endif

@@ -1,7 +1,5 @@
 #include "pipelines.h"
 
-#include "engine.h"
-#include "descriptors.h"
 #include "pisdef.h"
 #include "vulkan/vulkan_core.h"
 
@@ -54,12 +52,12 @@ VkShaderModule CreateShaderModule(VkDevice device, const char* fileName)
 	return shaderModule;
 }
 
-void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorCount, VkPipelineLayout* layout)
+void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorLayoutCount, VkPipelineLayout* layout)
 {
     VkPipelineLayoutCreateInfo layoutCreateInfo = {0};
     layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutCreateInfo.pNext = NULL;
-    layoutCreateInfo.setLayoutCount = descriptorCount;
+    layoutCreateInfo.setLayoutCount = descriptorLayoutCount;
     layoutCreateInfo.pSetLayouts = descriptorLayouts;
 
     VK_CHECK(vkCreatePipelineLayout(device,
@@ -70,7 +68,7 @@ void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descrip
 
 void CreateComputePipeline(VkDevice device, VkPipelineLayout layout, VkPipeline* computePipeline)
 {
-    VkShaderModule computeShaderMod = CreateShaderModule(device, "shaders/gradient.spv");
+    VkShaderModule computeShaderMod = CreateShaderModule(device, "/Users/nielsbil/Dev/voxel/shaders/gradient.spv");
 
     VkPipelineShaderStageCreateInfo shaderStage = {0};
     shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

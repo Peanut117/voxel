@@ -7,27 +7,21 @@
 
 typedef struct Descriptor {
     uint32_t bindingCount;
-    VkDescriptorSetLayoutBinding* binding;
+    VkDescriptorSetLayoutBinding binding;
     VkDescriptorSetLayout layout;
     VkDescriptorPool pool;
-    VkDescriptorSet* sets;
+    VkDescriptorSet set;
 } Descriptor;
-
-typedef struct DescriptorLayout {
-    VkDescriptorType type;
-    uint32_t binding;
-    VkShaderStageFlags flags;
-} DescriptorLayout;
 
 typedef struct PoolSize {
     VkDescriptorType type;
     float ratio;
 } PoolSize;
 
-void CreateDescriptorSetLayout(VkDevice device, Descriptor* descriptor, DescriptorLayout* descriptorLayout, uint32_t layoutCount);
+void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* layout, VkDescriptorSetLayoutBinding* descriptorLayoutBindings, uint32_t bindingCount);
 
-void CreateDescriptorPool(VkDevice device, Descriptor* descriptor, PoolSize* poolSize, uint32_t poolSizeCount, uint32_t maxSets);
+void CreateDescriptorPool(VkDevice device, VkDescriptorPool* pool, VkDescriptorPoolSize* poolSizes, uint32_t poolSizeCount, uint32_t maxSets);
 
-void AllocateDescriptorSets(VkDevice device, Descriptor* descriptor, uint32_t descriptorSetCount);
+void AllocateDescriptorSets(VkDevice device, Descriptor* descriptor);
 
 #endif

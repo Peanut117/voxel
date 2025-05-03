@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "volk.h"
 
-typedef struct {
+typedef struct ValidationLayer {
     uint32_t count;
     const char* layers[];
 } ValidationLayer;

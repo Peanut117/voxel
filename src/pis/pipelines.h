@@ -8,7 +8,7 @@ typedef struct Pipeline {
     VkPipelineLayout layout;
 } Pipeline;
 
-void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorCount, VkPipelineLayout* layout);
+void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descriptorLayouts, uint32_t descriptorLayoutCount, VkPipelineLayout* layout);
 
 void CreateComputePipeline(VkDevice device, VkPipelineLayout layout, VkPipeline* computePipeline);
 

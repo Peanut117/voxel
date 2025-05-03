@@ -14,8 +14,7 @@ int CreateBuffer(VkDevice device, VkPhysicalDevice pDevice,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
 
-	VkResult result = vkCreateBuffer(device, &bufferInfo, NULL, &buffer->buffer);
-	VK_CHECK(result);
+    VK_CHECK(vkCreateBuffer(device, &bufferInfo, NULL, &buffer->buffer));
 
 	VkMemoryRequirements memRequirements;
 	vkGetBufferMemoryRequirements(device, buffer->buffer, &memRequirements);
@@ -26,8 +25,7 @@ int CreateBuffer(VkDevice device, VkPhysicalDevice pDevice,
 		.memoryTypeIndex = FindMemoryType(pDevice, memRequirements.memoryTypeBits, properties)
 	};
 
-	result = vkAllocateMemory(device, &allocInfo, NULL, &buffer->memory);
-	VK_CHECK(result);
+	VK_CHECK(vkAllocateMemory(device, &allocInfo, NULL, &buffer->memory));
 
 	VK_CHECK(vkBindBufferMemory(device, buffer->buffer, buffer->memory, 0));
 

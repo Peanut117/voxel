@@ -123,8 +123,6 @@ void InitVulkan(PisEngine* pis)
     vkGetDeviceQueue(pis->vk.device, pis->vk.indices.computeFamilyIndex, 0, &pis->vk.computeQueue);
 
     CreateSwapchain(pis, pis->windowExtent.width, pis->windowExtent.height);
-
-    CreateDrawImages(pis, pis->windowExtent.width, pis->windowExtent.height);
 }
 
 

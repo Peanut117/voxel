@@ -8,10 +8,6 @@
 #include <string.h>
 
 #include "volk.h"
-// #include <vulkan/vulkan.h>
-// #include <vulkan/vulkan_core.h>
-// #include <vulkan/vulkan_metal.h>
-// #include <vulkan/vulkan_macos.h>
 
 #include <cglm/cglm.h>
 
