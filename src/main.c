@@ -8,7 +8,7 @@ bool processInput(void)
 {
 	SDL_Event event;
 
-	while(SDL_PollEvent(&event) != 0)
+	while(SDL_PollEvent(&event))
 	{
 		//User requests quit
 		if(event.type == SDL_EVENT_QUIT)

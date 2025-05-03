@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "engine.h"
 
@@ -46,7 +47,7 @@ void PisEngineInitialize(PisEngine* pis)
     pis->frameNumber = 0;
     pis->stopRendering = false;
 
-    InitWindow(pis, 800, 600);
+    InitWindow(pis, 832, 624);
 
     InitVulkan(pis);
 
@@ -65,9 +66,7 @@ void PisEngineInitialize(PisEngine* pis)
 
 void UpdateUniformBuffer(PisEngine* pis)
 {
-    pis->ubo.time = (float)SDL_GetTicks() / 1000.f;
-
-    printf("%.1f\n", pis->ubo.time);
+    pis->ubo.time = (float)SDL_GetTicks() / 500.f;
 
     memcpy(pis->vk.uboBuffer.ptr, &pis->ubo, sizeof(UniformBufferObject));
 }
@@ -80,13 +79,13 @@ void PisEngineDraw(PisEngine* pis)
     UpdateUniformBuffer(pis);
 
     // Wait until the gpu has finished rendering the last frame. Timeout of 1 second
-    VK_CHECK(vkWaitForFences(pis->vk.device, 1, &currentFrameData.renderFence, true, 1000000000));
+    VK_CHECK(vkWaitForFences(pis->vk.device, 1, &currentFrameData.renderFence, true, UINT64_MAX));
     VK_CHECK(vkResetFences(pis->vk.device, 1, &currentFrameData.renderFence));
 
     // Request image from the swapchain
     uint32_t swapchainImageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(pis->vk.device, pis->vk.swapchain, 1000000000,
-                                   currentFrameData.swapchainSemaphore, NULL, &swapchainImageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(pis->vk.device, pis->vk.swapchain, UINT64_MAX,
+                                   currentFrameData.swapchainSemaphore, VK_NULL_HANDLE, &swapchainImageIndex));
 
     VkCommandBuffer cmd = currentFrameData.mainCommandBuffer;
 
@@ -108,6 +107,17 @@ void PisEngineDraw(PisEngine* pis)
                             pis->vk.compute.layout, 0, 1,
                             &pis->vk.descriptor.set, 0, NULL);
 
+    VkClearColorValue clearColor = { { 1.0f, 0.0f, 0.0f, 1.0f } };
+
+    VkImageSubresourceRange range;
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = VK_REMAINING_MIP_LEVELS;
+    range.baseArrayLayer = 0;
+    range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+    vkCmdClearColorImage(cmd, pis->vk.drawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &range);
+
     vkCmdDispatch(cmd, pis->vk.drawImage.extent.width / 16, pis->vk.drawImage.extent.height / 16, 1);
 
     // Make the image presentable
@@ -121,14 +131,23 @@ void PisEngineDraw(PisEngine* pis)
 
     VK_CHECK(vkEndCommandBuffer(cmd));
 
-    VkCommandBufferSubmitInfo cmdInfo = CommandBufferSubmitInfo(cmd);
+    // VkSubmitInfo submit = SubmitInfo(cmd, currentFrameData.renderSemaphore, currentFrameData.swapchainSemaphore, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    //
+    VkPipelineStageFlags stageFlag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-    VkSemaphoreSubmitInfo waitInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, currentFrameData.swapchainSemaphore);
-    VkSemaphoreSubmitInfo signalInfo = SemaphoreSubmitInfo(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, currentFrameData.renderSemaphore);
+    VkSubmitInfo submit = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = NULL,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &currentFrameData.swapchainSemaphore,
+        .pWaitDstStageMask = &stageFlag,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &currentFrameData.renderSemaphore
+    };
 
-    VkSubmitInfo2 submit = SubmitInfo(&cmdInfo, &signalInfo, &waitInfo);
-
-    VK_CHECK(vkQueueSubmit2(pis->vk.computeQueue, 1, &submit, currentFrameData.renderFence));
+    VK_CHECK(vkQueueSubmit(pis->vk.computeQueue, 1, &submit, currentFrameData.renderFence));
 
     VkPresentInfoKHR presentInfo = {0};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -141,7 +160,14 @@ void PisEngineDraw(PisEngine* pis)
 
     presentInfo.pImageIndices = &swapchainImageIndex;
 
+    clock_t begin = clock();
+
     VK_CHECK(vkQueuePresentKHR(pis->vk.computeQueue, &presentInfo));
+
+    clock_t end = clock();
+    double timeSpent = (double)(end - begin) / CLOCKS_PER_SEC;
+    // printf("Queue present: %f\n", timeSpent);
+    begin = clock();
 
     pis->frameNumber++;
 }

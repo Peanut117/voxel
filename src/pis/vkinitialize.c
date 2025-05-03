@@ -7,25 +7,32 @@
 #include "swapchain.h"
 #include "validationlayers.h"
 
+#include "vulkan/vulkan_beta.h"
+#include "vulkan/vulkan_core.h"
+
 /* =====================Add needed instance extentions here========================= */
 
 #ifdef DEBUG
-const uint32_t instanceExtentionCount = 1;
-#else
-const uint32_t instanceExtentionCount = 0;
-#endif
+const uint32_t instanceExtentionCount = 2;
+
 const char* instanceExtentions[] = {
-#ifdef DEBUG
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-#endif
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 };
+#else
+const uint32_t instanceExtentionCount = 1;
+
+const char* instanceExtentions[] = {
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+};
+#endif
 
 /* ======================Add needed device extentions here=========================== */
 
 const uint32_t deviceExtentionCount = 2;
 const char* deviceExtentions[] = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+    VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME,
 };
 
 /* =================================Helper functions================================ */
@@ -54,7 +61,7 @@ void InitVulkan(PisEngine* pis)
 
     VkInstanceCreateInfo instanceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .flags = 0, //VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR, //Needed for Mac, has something to do with metal
+        .flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR, //Needed for Mac, has something to do with metal
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = NULL,
@@ -101,14 +108,13 @@ void InitVulkan(PisEngine* pis)
         .pQueuePriorities = &queuePriority,
     };
 
-    VkPhysicalDeviceSynchronization2Features synchronization2Features = {
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-        .synchronization2 = true
-    };
+    VkPhysicalDeviceFeatures2 features = {0};
+    features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features.pNext = NULL;
     
     VkDeviceCreateInfo deviceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = &synchronization2Features,
+        .pNext = &features,
         .pQueueCreateInfos = &queueCreateInfo,
         .queueCreateInfoCount = 1,
 		.enabledExtensionCount = deviceExtentionCount,
@@ -244,9 +250,11 @@ int RateDevice(VkPhysicalDevice pDevice)
 {
     int score = 0;
     VkPhysicalDeviceProperties properties;
-    VkPhysicalDeviceFeatures features;
+    VkPhysicalDeviceFeatures2 features;
+    features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
     vkGetPhysicalDeviceProperties(pDevice, &properties);
-    vkGetPhysicalDeviceFeatures(pDevice, &features);
+    vkGetPhysicalDeviceFeatures2(pDevice, &features);
 
     QueueFamilyIndices indices = FindQueueFamilies(pDevice);
     if(!indices.computeFamilyIsAvailable)

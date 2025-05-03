@@ -15,9 +15,7 @@ VkSemaphoreSubmitInfo SemaphoreSubmitInfo(VkPipelineStageFlags2 stageMask, VkSem
 
 VkCommandBufferSubmitInfo CommandBufferSubmitInfo(VkCommandBuffer cmd);
 
-VkSubmitInfo2 SubmitInfo(VkCommandBufferSubmitInfo* cmd,
-                         VkSemaphoreSubmitInfo* signalSemaphoreInfo,
-                         VkSemaphoreSubmitInfo* waitSemaphoreInfo);
+VkSubmitInfo SubmitInfo(VkCommandBuffer cmd, VkSemaphore signalSemaphore, VkSemaphore waitSemaphore, VkPipelineStageFlags waitStage);
 
 VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
 VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);

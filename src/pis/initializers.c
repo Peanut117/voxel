@@ -75,22 +75,19 @@ VkCommandBufferSubmitInfo CommandBufferSubmitInfo(VkCommandBuffer cmd)
     return info;
 }
 
-VkSubmitInfo2 SubmitInfo(VkCommandBufferSubmitInfo* cmd, VkSemaphoreSubmitInfo* signalSemaphoreInfo,
-                         VkSemaphoreSubmitInfo* waitSemaphoreInfo)
+VkSubmitInfo SubmitInfo(VkCommandBuffer cmd, VkSemaphore signalSemaphore, VkSemaphore waitSemaphore, VkPipelineStageFlags waitStage)
 {
-    VkSubmitInfo2 info = {0};
-
-    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-    info.pNext = NULL;
-
-    info.waitSemaphoreInfoCount = waitSemaphoreInfo == NULL ? 0 : 1;
-    info.pWaitSemaphoreInfos = waitSemaphoreInfo;
-
-    info.signalSemaphoreInfoCount = signalSemaphoreInfo == NULL ? 0 : 1;
-    info.pSignalSemaphoreInfos = signalSemaphoreInfo;
-
-    info.commandBufferInfoCount = 1;
-    info.pCommandBufferInfos = cmd;
+    VkSubmitInfo info = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = NULL,
+        .waitSemaphoreCount = (waitSemaphore != VK_NULL_HANDLE) ? 1 : 0,
+        .pWaitSemaphores = (waitSemaphore != VK_NULL_HANDLE) ? &waitSemaphore : NULL,
+        .pWaitDstStageMask = (waitSemaphore != VK_NULL_HANDLE) ? &waitStage : NULL,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &cmd,
+        .signalSemaphoreCount = (signalSemaphore != VK_NULL_HANDLE) ? 1 : 0,
+        .pSignalSemaphores = (signalSemaphore != VK_NULL_HANDLE) ? &signalSemaphore : NULL
+    };
 
     return info;
 }

@@ -21,25 +21,48 @@ const vec3 CAM_POS = {0.0, 0.0, 0.0};
 
 const ivec3 VOXEL = {0, 0, -9};
 
+float cosRange(float amt, float range, float minimum) {
+	return (((1.0 + cos(radians(amt))) * 0.5) * range) + minimum;
+}
+
 void main()
 {
-    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
     ivec2 size = imageSize(image);
 
-    float t = ubo.time,i,z,d;
-    for(color *= i;i++<1e2;
-        color += (cos(z+t+vec4(6,1,2,3))+1.)/d)
-    {
-        vec3 p=z*normalize(vec3(texelCoord+texelCoord,0)-size.xyy);
-        p.z-=t;
-        for(d=1.;d<9.;d/=.7)
-            p+=cos(p.yzx*d+z*.2)/d;
-        z+=d=.02+.1*abs(3.-length(p.xy));
-    }
-    color = tanh(color/3e3);
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
-    imageStore(image, ivec2(gl_GlobalInvocationID.xy), color);
+    const int zoom = 40;
+    const float brightness = 0.975;
+	float time = ubo.time * 1.25;
+	vec2 uv = texelCoord.xy / size.xy;
+	vec2 p  = (2.0*texelCoord.xy-size.xy)/max(size.x,size.y);
+	float ct = cosRange(time*5.0, 3.0, 1.1);
+	float xBoost = cosRange(time*0.2, 5.0, 5.0);
+	float yBoost = cosRange(time*0.1, 10.0, 5.0);
+	float fScale = cosRange(time * 15.5, 1.25, 0.5);
+	
+	for(int i=1;i<zoom;i++) {
+		float _i = float(i);
+		vec2 newp=p;
+		newp.x+=0.25/_i*sin(_i*p.y+time*cos(ct)*0.5/20.0+0.005*_i)*fScale+xBoost;		
+		newp.y+=0.25/_i*sin(_i*p.x+time*ct*0.3/40.0+0.03*float(i+15))*fScale+yBoost;
+		p=newp;
+	}
+	
+	vec3 col=vec3(0.5*sin(3.0*p.x)+0.5,0.5*sin(3.0*p.y)+0.5,sin(p.x+p.y));
+	col *= brightness;
+    
+    // Add border
+    float vigAmt = 5.0;
+    float vignette = (1.-vigAmt*(uv.y-.5)*(uv.y-.5))*(1.-vigAmt*(uv.x-.5)*(uv.x-.5));
+	float extrusion = (col.x + col.y + col.z) / 4.0;
+    extrusion *= 1.5;
+    extrusion *= vignette;
+    
+	color = vec4(col, extrusion);
+
+    imageStore(image, texelCoord, color);
 }
 
 // void main() 
