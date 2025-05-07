@@ -68,7 +68,7 @@ void CreateComputePipelineLayout(VkDevice device, VkDescriptorSetLayout* descrip
 
 void CreateComputePipeline(VkDevice device, VkPipelineLayout layout, VkPipeline* computePipeline)
 {
-    VkShaderModule computeShaderMod = CreateShaderModule(device, "/Users/nielsbil/Dev/voxel/shaders/gradient.spv");
+    VkShaderModule computeShaderMod = CreateShaderModule(device, "/Users/nielsbil/Dev/voxel/shaders/shader.spv");
 
     VkPipelineShaderStageCreateInfo shaderStage = {0};
     shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

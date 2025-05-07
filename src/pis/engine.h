@@ -15,6 +15,17 @@
 
 #include "cglm/cglm.h"
 
+
+typedef struct UniformBufferObject {
+    vec3 position;  float _pad1;
+    vec3 forward;   float _pad2;
+    vec3 right;     float _pad3;
+    vec3 up;
+
+    float fov;
+    float time;
+} UniformBufferObject;
+
 typedef struct QueueFamilyIndices {
     uint32_t computeFamilyIndex;
     bool computeFamilyIsAvailable;
@@ -27,12 +38,6 @@ typedef struct FrameData {
     VkSemaphore swapchainSemaphore, renderSemaphore;
     VkFence renderFence;
 } FrameData;
-
-typedef struct UniformBufferObject {
-    float time;
-    mat4 hi;
-    mat4 bufferbuffer;
-} UniformBufferObject;
 
 typedef struct PisVulkanInstance {
     VkInstance instance;

@@ -1,0 +1,125 @@
+//GLSL version to use
+#version 450
+
+//size of a workgroup for compute
+layout (local_size_x = 16, local_size_y = 16) in;
+
+//descriptor bindings for the pipeline
+layout(binding = 0, rgba16f) uniform writeonly image2D image;
+
+layout(binding = 1, std140) uniform UniformBufferObject {
+    vec3 position;
+    vec3 forward;
+    vec3 right;
+    vec3 up;
+
+    float fov;
+    float time;
+};
+
+const float EPSILON = 1e-2;
+
+float sdSphere(vec3 p, float d) { return length(p) - d; } 
+
+float sdBox( vec3 p, vec3 b )
+{
+  vec3 d = abs(p) - b;
+  return min(max(d.x,max(d.y,d.z)),0.0) +
+         length(max(d,0.0));
+}
+	
+bool getVoxel(ivec3 c) {
+	vec3 p = vec3(c) + vec3(0.5);
+	float d = max(-sdSphere(p, 7.5), sdBox(p, vec3(6.0)));
+	return d < 0.0;
+}
+bool intersectVoxel(vec3 ro, vec3 rd)
+{
+    ivec3 voxel = ivec3(floor(ro));
+    ivec3 step = ivec3(sign(rd));
+    vec3 tDelta = abs(1.0 / rd);
+
+    vec3 nextBoundary = vec3(voxel) + vec3(greaterThan(rd, vec3(0.0)));
+    vec3 tMax = (nextBoundary - ro) / rd;
+
+    for (int i = 0; i < 64; ++i) {
+        if (getVoxel(voxel)) return true;
+
+        if (tMax.x < tMax.y && tMax.x < tMax.z) {
+            voxel.x += step.x;
+            tMax.x += tDelta.x;
+        } else if (tMax.y < tMax.z) {
+            voxel.y += step.y;
+            tMax.y += tDelta.y;
+        } else {
+            voxel.z += step.z;
+            tMax.z += tDelta.z;
+        }
+    }
+
+    return false;
+}
+
+
+// bool intersectVoxel(vec3 ro, vec3 rd)
+// {
+//     ivec3 voxel = ivec3(floor(ro));
+//
+//     ivec3 step = ivec3(sign(rd));
+//
+//     vec3 tDelta = step / rd;
+//     vec3 nextVoxelBoundary = voxel + step;
+//     vec3 tMax = (nextVoxelBoundary - ro) / rd;
+//
+//     for (int i = 0; i < 32; ++i) {
+//         if(getVoxel(voxel)) {
+//             return true;
+//         }
+//
+//         if(tMax.x < tMax.y && tMax.x < tMax.z) {
+//             tMax.x += tDelta.x;
+//             voxel.x += step.x;
+//         } else if(tMax.y < tMax.z) {
+//             tMax.y += tDelta.y;
+//             voxel.y += step.y;
+//         } else {
+//             tMax.z += tDelta.z;
+//             voxel.z += step.z;
+//         }
+//     }
+//
+//     return false;
+// }
+
+void main() {
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 imageSize = imageSize(image);
+
+    float aspectRatio = float(imageSize.x) / float(imageSize.y);
+
+    if(pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
+        return;
+
+    // Convert pixel coord to NDC
+    vec2 uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / imageSize;
+    uv = uv * 2.0 - 1.0;
+    uv.x *= aspectRatio;
+
+    vec3 rayDir = normalize(
+        forward +
+        uv.x * tan(radians(fov) * 0.5) * right +
+        uv.y * tan(radians(fov) * 0.5) * up
+    );
+
+    vec3 rayOrigin = position;
+    rayOrigin += rayDir * EPSILON; // Nudge forward to avoid self-intersection
+
+    bool t;
+    vec4 color = vec4(0.0);
+
+    if(intersectVoxel(rayOrigin, rayDir)) {
+        color = vec4(1.0, 0.4, 0.1, 1.0); // voxel hit color
+    }
+
+    imageStore(image, pixelCoord, color);
+}

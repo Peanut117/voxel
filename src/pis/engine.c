@@ -66,8 +66,6 @@ void PisEngineInitialize(PisEngine* pis)
 
 void UpdateUniformBuffer(PisEngine* pis)
 {
-    pis->ubo.time = (float)SDL_GetTicks() / 500.f;
-
     memcpy(pis->vk.uboBuffer.ptr, &pis->ubo, sizeof(UniformBufferObject));
 }
 
@@ -107,16 +105,7 @@ void PisEngineDraw(PisEngine* pis)
                             pis->vk.compute.layout, 0, 1,
                             &pis->vk.descriptor.set, 0, NULL);
 
-    VkClearColorValue clearColor = { { 1.0f, 0.0f, 0.0f, 1.0f } };
-
-    VkImageSubresourceRange range;
-    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    range.baseMipLevel = 0;
-    range.levelCount = VK_REMAINING_MIP_LEVELS;
-    range.baseArrayLayer = 0;
-    range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-    vkCmdClearColorImage(cmd, pis->vk.drawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &range);
+    DrawBackground(cmd, pis);
 
     vkCmdDispatch(cmd, pis->vk.drawImage.extent.width / 16, pis->vk.drawImage.extent.height / 16, 1);
 
@@ -259,8 +248,6 @@ void InitUniformBuffers(PisEngine* pis)
     pis->vk.uboBuffer.ptr = malloc(sizeof(UniformBufferObject));
 
     VK_CHECK(vkMapMemory(pis->vk.device, pis->vk.uboBuffer.memory, 0, bufferSize, 0, &pis->vk.uboBuffer.ptr));
-
-    pis->ubo.time = 1.0f;
 }
 
 void InitDescriptors(PisEngine* pis)
@@ -377,8 +364,7 @@ void DrawBackground(VkCommandBuffer cmd, PisEngine* pis)
 {
     // Make a clear color from frame number
     VkClearColorValue clearValue;
-    float flash = fabs(sin(pis->frameNumber / 120.f));
-    clearValue = (VkClearColorValue){ { 0.f, 0.f, flash, 1.f } };
+    clearValue = (VkClearColorValue){ { 0.f, 0.f, 1.f, 1.f } };
 
     VkImageSubresourceRange clearRange = ImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT);
 

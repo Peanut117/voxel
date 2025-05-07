@@ -1,3 +1,3 @@
-glslc gradient.comp -o gradient.spv
+glslc voxel.comp -o shader.spv
 
 echo Shaders compiled!
