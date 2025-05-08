@@ -15,6 +15,7 @@ typedef struct AllocatedImage {
 void CreateImage(VkDevice device,
                  VkPhysicalDevice pDevice,
                  VkFormat format,
+                 VkImageType imageType,
                  VkImageUsageFlags imageUsage,
                  VkExtent3D extent,
                  VkMemoryPropertyFlags properties,

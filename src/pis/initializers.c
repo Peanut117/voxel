@@ -1,5 +1,4 @@
 #include "initializers.h"
-#include "vulkan/vk_platform.h"
 #include "vulkan/vulkan_core.h"
 
 VkFenceCreateInfo FenceCreateInfo(VkFenceCreateFlags flags)
@@ -92,13 +91,13 @@ VkSubmitInfo SubmitInfo(VkCommandBuffer cmd, VkSemaphore signalSemaphore, VkSema
     return info;
 }
 
-VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent)
+VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageType imageType, VkImageUsageFlags usageFlags, VkExtent3D extent)
 {
     VkImageCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     info.pNext = NULL;
 
-    info.imageType = VK_IMAGE_TYPE_2D;
+    info.imageType = imageType;
 
     info.format = format;
     info.extent = extent;
@@ -112,18 +111,20 @@ VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags,
     //optimal tiling, which means the image is stored on the best gpu format
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
     info.usage = usageFlags;
+    
+    info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     return info;
 }
 
-VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags)
+VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImageViewType imageType, VkImage image, VkImageAspectFlags aspectFlags)
 {
     // build a image-view for the depth image to use for rendering
     VkImageViewCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     info.pNext = NULL;
 
-    info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    info.viewType = imageType;
     info.image = image;
     info.format = format;
     info.subresourceRange.baseMipLevel = 0;
@@ -135,3 +136,21 @@ VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImag
     return info;
 }
 
+VkBufferImageCopy BufferImageCopyInfo(VkImageAspectFlags aspectMask, VkExtent3D extent)
+{
+    VkBufferImageCopy copyRegion = {
+        .bufferOffset = 0,
+        .bufferRowLength = 0,     // tightly packed
+        .bufferImageHeight = 0,
+        .imageSubresource = {
+            .aspectMask = aspectMask,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {extent.width, extent.height, extent.depth},
+    };
+
+    return copyRegion;
+}

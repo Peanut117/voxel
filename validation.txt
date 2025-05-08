@@ -1,0 +1,6 @@
+WARNING-CreateInstance-status-message(INFO / SPEC): msgNum: 601872502 - Validation Information: [ WARNING-CreateInstance-status-message ] Object 0: handle = 0x1360edc00, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0x23dfd876 | vkCreateInstance(): Khronos Validation Layer Active:
+    Current Enables: None.
+    Current Disables: VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT.
+
+    Objects: 1
+        [0] 0x1360edc00, type: 1, name: NULL

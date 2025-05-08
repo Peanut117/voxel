@@ -8,6 +8,7 @@ typedef struct Buffer {
     VkBuffer buffer;
     VkDeviceMemory memory;
     void* ptr;
+    VkDeviceSize size;
 } Buffer;
 
 int CreateBuffer(VkDevice device, VkPhysicalDevice pDevice,

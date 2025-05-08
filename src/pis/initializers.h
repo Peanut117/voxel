@@ -17,7 +17,9 @@ VkCommandBufferSubmitInfo CommandBufferSubmitInfo(VkCommandBuffer cmd);
 
 VkSubmitInfo SubmitInfo(VkCommandBuffer cmd, VkSemaphore signalSemaphore, VkSemaphore waitSemaphore, VkPipelineStageFlags waitStage);
 
-VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
-VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags aspectFlags);
+VkImageCreateInfo ImageCreateInfo(VkFormat format, VkImageType imageType, VkImageUsageFlags usageFlags, VkExtent3D extent);
+VkImageViewCreateInfo ImageViewCreateInfo(VkFormat format, VkImageViewType imageType, VkImage image, VkImageAspectFlags aspectFlags);
+
+VkBufferImageCopy BufferImageCopyInfo(VkImageAspectFlags aspectMask, VkExtent3D extent);
 
 #endif

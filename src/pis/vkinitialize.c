@@ -253,8 +253,12 @@ int RateDevice(VkPhysicalDevice pDevice)
     VkPhysicalDeviceFeatures2 features;
     features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
+    // For some weird reason if these printf's are not here, the program crashes
+    // printf("Hi\n");
     vkGetPhysicalDeviceProperties(pDevice, &properties);
-    vkGetPhysicalDeviceFeatures2(pDevice, &features);
+    // printf("Hi\n");
+    // vkGetPhysicalDeviceFeatures2(pDevice, &features);
+    // printf("Hi\n");
 
     QueueFamilyIndices indices = FindQueueFamilies(pDevice);
     if(!indices.computeFamilyIsAvailable)

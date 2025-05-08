@@ -1,0 +1,222 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/validationlayers.o",
+      "src/pis/validationlayers.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/validationlayers.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/validationlayers.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/voxLoader.o",
+      "src/pis/voxLoader.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/voxLoader.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/voxLoader.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/images.o",
+      "src/pis/images.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/images.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/images.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/initializers.o",
+      "src/pis/initializers.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/initializers.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/initializers.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/volk.o",
+      "src/pis/volk.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/volk.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/volk.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/vkinitialize.o",
+      "src/pis/vkinitialize.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/vkinitialize.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/vkinitialize.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/pipelines.o",
+      "src/pis/pipelines.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/pipelines.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/pipelines.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/buffers.o",
+      "src/pis/buffers.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/buffers.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/buffers.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/engine.o",
+      "src/pis/engine.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/engine.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/engine.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/swapchain.o",
+      "src/pis/swapchain.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/swapchain.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/swapchain.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-std=c99",
+      "-Wall",
+      "-Wno-typedef-redefinition",
+      "-Iinclude",
+      "-I/opt/homebrew/include",
+      "-DVK_USE_PLATFORM_MACOS_MVK",
+      "-O3",
+      "-DNDEBUG",
+      "-c",
+      "-o",
+      "obj/pis/descriptors.o",
+      "src/pis/descriptors.c"
+    ],
+    "directory": "/Users/nielsbil/Dev/voxel",
+    "file": "/Users/nielsbil/Dev/voxel/src/pis/descriptors.c",
+    "output": "/Users/nielsbil/Dev/voxel/obj/pis/descriptors.o"
+  }
+]

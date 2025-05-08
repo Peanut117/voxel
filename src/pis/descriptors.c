@@ -3,6 +3,7 @@
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <assert.h>
 
 void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* layout, VkDescriptorSetLayoutBinding* descriptorLayoutBindings, uint32_t bindingCount)
 {
@@ -17,7 +18,8 @@ void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout* layout, V
     VK_CHECK(vkCreateDescriptorSetLayout(device, &createInfo, NULL, layout));
 }
 
-void CreateDescriptorPool(VkDevice device, VkDescriptorPool* pool, VkDescriptorPoolSize* poolSizes, uint32_t poolSizeCount, uint32_t maxSets)
+void CreateDescriptorPool(VkDevice device, VkDescriptorPool* pool, VkDescriptorPoolSize* poolSizes,
+                          uint32_t poolSizeCount, uint32_t maxSets)
 {
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -31,6 +33,8 @@ void CreateDescriptorPool(VkDevice device, VkDescriptorPool* pool, VkDescriptorP
 
 void AllocateDescriptorSets(VkDevice device, Descriptor* descriptor)
 {
+    assert(descriptor->layout != VK_NULL_HANDLE);
+
     VkDescriptorSetAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;

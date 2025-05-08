@@ -1,4 +1,3 @@
-#include <malloc/_malloc_type.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,75 +27,90 @@ int main(void)
         return -1;
     }
 
+    pis->windowExtent.width = 1280;
+    pis->windowExtent.height = 720;
+
+    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/monument/monu16.vox");
+
     PisEngineInitialize(pis);
+
+    UniformBufferObject ubo = {0};
 
     const bool* keys = SDL_GetKeyboardState(NULL);
 
-    glm_vec3((vec3){0.5, 0.5, -2}, pis->ubo.position);
+    glm_vec3((vec3){pis->voxelData.dimensions[0]/2.f,
+                    pis->voxelData.dimensions[1]/2.f, -2}, ubo.position);
 
     SDL_SetWindowRelativeMouseMode(pis->window, true);
     float pitch = 0.f, yaw = 0.f;
 
-    pis->ubo.fov = 90.0f;
+    ubo.fov = 90.0f;
 
-    float moveSpeed = 0.075;
-    float velocity = moveSpeed; // + deltatime
+    float moveSpeed = 0.1;
 
     while(processInput(pis))
     {
         float dx, dy, sensitivity = 0.002;
         SDL_GetRelativeMouseState(&dx, &dy);
         yaw -= dx * sensitivity;
-        pitch += dy * sensitivity;
+        pitch -= dy * sensitivity;
 
-        pis->ubo.forward[0] = cos(pitch) * sin(yaw);
-        pis->ubo.forward[1] = sin(pitch);
-        pis->ubo.forward[2] = cos(pitch) * cos(yaw);
-        glm_normalize(pis->ubo.forward);
+        ubo.forward[0] = cos(pitch) * sin(yaw);
+        ubo.forward[1] = sin(pitch);
+        ubo.forward[2] = cos(pitch) * cos(yaw);
+        glm_normalize(ubo.forward);
 
-        glm_cross(pis->ubo.forward, (vec3){0, 1, 0}, pis->ubo.right);
-        glm_normalize(pis->ubo.right);
+        glm_cross(ubo.forward, (vec3){0, 1, 0}, ubo.right);
+        glm_normalize(ubo.right);
 
-        glm_cross(pis->ubo.right, pis->ubo.forward, pis->ubo.up);
+        glm_cross(ubo.right, ubo.forward, ubo.up);
 
         vec3 delta;
         glm_vec3_zero(delta);
 
+        float velocity = moveSpeed; // + deltatime
+
+        if (keys[SDL_SCANCODE_LSHIFT]) {
+            velocity *= 3;
+        }
+
         if (keys[SDL_SCANCODE_W]) {
             vec3 temp;
-            glm_vec3_scale(pis->ubo.forward, velocity, temp);
+            glm_vec3_scale(ubo.forward, velocity, temp);
             glm_vec3_add(delta, temp, delta);
         }
         if (keys[SDL_SCANCODE_S]) {
             vec3 temp;
-            glm_vec3_scale(pis->ubo.forward, -velocity, temp);
+            glm_vec3_scale(ubo.forward, -velocity, temp);
             glm_vec3_add(delta, temp, delta);
         }
         if (keys[SDL_SCANCODE_A]) {
             vec3 temp;
-            glm_vec3_scale(pis->ubo.right, -velocity, temp);
+            glm_vec3_scale(ubo.right, -velocity, temp);
             glm_vec3_add(delta, temp, delta);
         }
         if (keys[SDL_SCANCODE_D]) {
             vec3 temp;
-            glm_vec3_scale(pis->ubo.right, velocity, temp);
+            glm_vec3_scale(ubo.right, velocity, temp);
             glm_vec3_add(delta, temp, delta);
         }
-        if (keys[SDL_SCANCODE_LSHIFT]) {
-            vec3 temp = {0.0f, -velocity, 0.0f};
-            glm_vec3_add(delta, temp, delta);
-        }
-        if (keys[SDL_SCANCODE_LCTRL]) {
+        if (keys[SDL_SCANCODE_SPACE]) {
             vec3 temp = {0.0f, velocity, 0.0f};
             glm_vec3_add(delta, temp, delta);
         }
-        if(keys[SDL_SCANCODE_MINUS])    pis->ubo.fov -= 0.50;
-        if(keys[SDL_SCANCODE_EQUALS])   pis->ubo.fov += 0.50;
-        if(keys[SDL_SCANCODE_LSHIFT] && keys[SDL_SCANCODE_EQUALS])  pis->ubo.fov = 90;
+        if (keys[SDL_SCANCODE_LCTRL]) {
+            vec3 temp = {0.0f, -velocity, 0.0f};
+            glm_vec3_add(delta, temp, delta);
+        }
+        if(keys[SDL_SCANCODE_MINUS])    ubo.fov += 0.50;
+        if(keys[SDL_SCANCODE_EQUALS])   ubo.fov -= 0.50;
+        if(keys[SDL_SCANCODE_LSHIFT] && keys[SDL_SCANCODE_EQUALS])  ubo.fov = 90;
 
-        glm_vec3_add(pis->ubo.position, delta, pis->ubo.position);
+        glm_vec3_add(ubo.position, delta, ubo.position);
 
-        pis->ubo.time = (float)SDL_GetTicks() / 1000.f;
+        ubo.time = (float)SDL_GetTicks() / 1000.f;
+
+        UpdateUniformBuffer(pis, ubo);
 
         PisEngineDraw(pis);
     }

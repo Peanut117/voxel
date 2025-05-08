@@ -13,6 +13,8 @@
 #include "images.h"
 #include "buffers.h"
 
+#include "voxLoader.h"
+
 #include "cglm/cglm.h"
 
 
@@ -57,6 +59,8 @@ typedef struct PisVulkanInstance {
     AllocatedImage drawImage;
     VkExtent2D drawExtent;
 
+    AllocatedImage voxelImage;
+
     QueueFamilyIndices indices;
     VkQueue computeQueue;
 
@@ -65,6 +69,7 @@ typedef struct PisVulkanInstance {
     Descriptor descriptor;
 
     Buffer uboBuffer;
+    Buffer paletteBuffer;
 
     FrameData* frames;
 
@@ -79,7 +84,8 @@ typedef struct PisEngine {
     uint32_t frameNumber;
     bool stopRendering;
     VkExtent2D windowExtent;
-    UniformBufferObject ubo;
+    char voxelFile[128];
+    Vox voxelData;
 } PisEngine;
 
 void PisEngineInitialize(PisEngine* pis);
@@ -87,5 +93,7 @@ void PisEngineInitialize(PisEngine* pis);
 void PisEngineDraw(PisEngine* pis);
 
 void PisEngineCleanup(PisEngine* pis);
+
+void UpdateUniformBuffer(PisEngine* pis, UniformBufferObject ubo);
 
 #endif

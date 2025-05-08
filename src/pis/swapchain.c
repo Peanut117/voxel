@@ -97,6 +97,7 @@ void CreateSwapchain(PisEngine* pis, uint32_t width, uint32_t height)
     for(uint32_t i = 0; i < swapchainImageCount; i++)
     {
         VkImageViewCreateInfo imageViewInfo = ImageViewCreateInfo(pis->vk.swapchainImageFormat,
+                                                                  VK_IMAGE_VIEW_TYPE_2D,
                                                                   pis->vk.swapchainImages[i],
                                                                   VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -126,11 +127,13 @@ void CreateDrawImages(PisEngine* pis, uint32_t width, uint32_t height)
 
     CreateImage(pis->vk.device, pis->vk.physicalDevice,
                 pis->vk.drawImage.format,
+                VK_IMAGE_TYPE_2D,
                 drawImageUsages, pis->vk.drawImage.extent,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 &pis->vk.drawImage.image,
                 &pis->vk.drawImage.memory);
 
-    VkImageViewCreateInfo imgViewInfo = ImageViewCreateInfo(pis->vk.drawImage.format, pis->vk.drawImage.image, VK_IMAGE_ASPECT_COLOR_BIT);
+    VkImageViewCreateInfo imgViewInfo = ImageViewCreateInfo(pis->vk.drawImage.format, VK_IMAGE_VIEW_TYPE_2D,
+                                                            pis->vk.drawImage.image, VK_IMAGE_ASPECT_COLOR_BIT);
     VK_CHECK(vkCreateImageView(pis->vk.device, &imgViewInfo, NULL, &pis->vk.drawImage.view));
 }

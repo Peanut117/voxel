@@ -14,6 +14,8 @@ int CreateBuffer(VkDevice device, VkPhysicalDevice pDevice,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
 
+    buffer->size = size;
+
     VK_CHECK(vkCreateBuffer(device, &bufferInfo, NULL, &buffer->buffer));
 
 	VkMemoryRequirements memRequirements;
