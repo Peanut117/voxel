@@ -1,0 +1,175 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// Textures
+layout(binding = 0, rgba16f) uniform writeonly image2D outputImage;
+layout(binding = 1, r8ui) uniform readonly uimage3D voxelVolume;
+
+// Buffers
+layout(binding = 2, std430) buffer Palette { uint palette[]; };
+layout(binding = 3, std140) uniform Camera {
+    mat4 viewProj;
+    vec3 position;
+    vec3 forward;
+    vec3 right;
+    vec3 up;
+    float fov;
+    float time;
+};
+
+const float EPSILON = 1e-3;
+const int MAX_STEPS = 512;
+const float SHADOW_BIAS = 0.1;
+const vec3 AMBIENT = vec3(0.05);
+const vec3 LIGHT_COLOR = vec3(1.0, 0.9, 0.8);
+const ivec3 LIGHT_POS = ivec3(4, 50, 0);
+
+struct RayHit {
+    vec3 position;
+    ivec3 voxel;
+    uint material;
+    bool hitLight;
+};
+
+vec4 unpackColor(uint packed) {
+    return vec4(
+        float((packed >>  0) & 0xFF) / 255.0,
+        float((packed >>  8) & 0xFF) / 255.0,
+        float((packed >> 16) & 0xFF) / 255.0,
+        float((packed >> 24) & 0xFF) / 255.0
+    );
+}
+
+vec3 estimateNormal(ivec3 p) {
+    ivec3 size = imageSize(voxelVolume);
+    ivec3 samples[6] = {
+        ivec3(1,0,0), ivec3(-1,0,0),
+        ivec3(0,1,0), ivec3(0,-1,0),
+        ivec3(0,0,1), ivec3(0,0,-1)
+    };
+    
+    vec3 normal = vec3(0);
+    for(int i=0; i<6; i++) {
+        ivec3 samplePos = clamp(p + samples[i], ivec3(0), size-ivec3(1));
+        normal += vec3(samples[i]) * imageLoad(voxelVolume, samplePos).r;
+    }
+    return normalize(normal);
+}
+
+RayHit voxelTrace(vec3 origin, vec3 direction) {
+    RayHit hit;
+    hit.material = 0;
+    hit.hitLight = false;
+    
+    ivec3 voxel = ivec3(floor(origin));
+    ivec3 step = ivec3(sign(direction));
+    vec3 tDelta = 1.0 / abs(direction);
+    vec3 tMax = (step * (vec3(voxel) + 0.5 - origin)) * tDelta;
+
+    for(int i=0; i<MAX_STEPS; i++) {
+        uint value = imageLoad(voxelVolume, voxel).r;
+        
+        if(value > 0) {
+            hit.position = origin + direction * tMax;
+            hit.voxel = voxel;
+            hit.material = value;
+            return hit;
+        }
+        
+        if(voxel == LIGHT_POS) {
+            hit.position = origin + direction * tMax;
+            hit.hitLight = true;
+            return hit;
+        }
+
+        if(tMax.x < tMax.y && tMax.x < tMax.z) {
+            voxel.x += step.x;
+            tMax.x += tDelta.x;
+        } else if(tMax.y < tMax.z) {
+            voxel.y += step.y;
+            tMax.y += tDelta.y;
+        } else {
+            voxel.z += step.z;
+            tMax.z += tDelta.z;
+        }
+    }
+    
+    return hit;
+}
+
+float softShadow(vec3 origin, vec3 lightDir, float maxDist) {
+    float shadow = 1.0;
+    float t = SHADOW_BIAS;
+    
+    for(int i=0; i<16; i++) {
+        vec3 p = origin + lightDir * t;
+        ivec3 v = ivec3(floor(p));
+        
+        if(imageLoad(voxelVolume, v).r > 0) {
+            return 0.2;
+        }
+        
+        if(v == LIGHT_POS || t > maxDist) break;
+        
+        t += 0.5;
+        shadow *= 0.95;
+    }
+    
+    return mix(0.2, 1.0, shadow);
+}
+
+vec3 phongLighting(vec3 pos, vec3 normal, vec3 albedo) {
+    vec3 lightVec = vec3(LIGHT_POS) + 0.5 - pos;
+    vec3 lightDir = normalize(lightVec);
+    float dist = length(lightVec);
+    
+    // Diffuse
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = LIGHT_COLOR * NdotL;
+    
+    // Specular
+    vec3 viewDir = normalize(pos - position);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = LIGHT_COLOR * spec * 0.2;
+    
+    // Shadows
+    float shadow = softShadow(pos + normal*EPSILON, lightDir, dist);
+    
+    return (AMBIENT + (diffuse + specular) * shadow) * albedo;
+}
+
+void main() {
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(outputImage);
+    if(any(greaterThanEqual(coord, size))) return;
+
+    vec2 uv = (vec2(coord) + 0.5) / size * 2.0 - 1.0;
+    uv.x *= float(size.x)/float(size.y);
+    
+    vec3 rayDir = normalize(
+        forward +
+        uv.x * tan(radians(fov) * 0.5) * right +
+        uv.y * tan(radians(fov) * 0.5) * -up
+    );
+    RayHit hit = voxelTrace(position + rayDir*EPSILON, rayDir);
+    
+    vec4 color = vec4(0.0);
+    
+    if(hit.hitLight) {
+        color = vec4(LIGHT_COLOR * 2.0, 1.0);
+    }
+    else if(hit.material > 0) {
+        vec3 albedo = unpackColor(palette[hit.material-1]).rgb;
+        vec3 normal = estimateNormal(hit.voxel);
+        color.rgb = phongLighting(hit.position, normal, albedo);
+        color.a = 1.0;
+    }
+    else if(time > 0) { // Skybox
+        vec3 sky = mix(vec3(0.5,0.7,1.0), vec3(1.0), smoothstep(-0.2, 0.5, rayDir.y));
+        color = vec4(sky, 1.0);
+    }
+    
+    imageStore(outputImage, coord, color);
+}

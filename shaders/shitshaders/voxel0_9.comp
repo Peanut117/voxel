@@ -23,18 +23,9 @@ layout(binding = 3, std140) uniform UniformBufferObject {
     float time;
 };
 
-struct RayHit {
-    vec3 pos;
-    vec3 normal;
-    ivec3 voxel;
-    uint material;
-};
-
 const float EPSILON = 1e-3;
-const uint MAX_STEPS = 256;
 
-vec4 unpackColor(uint packed)
-{
+vec4 unpackColor(uint packed) {
     return vec4(
         float((packed >>  0) & 0xFF) / 255.0,
         float((packed >>  8) & 0xFF) / 255.0,
@@ -43,45 +34,39 @@ vec4 unpackColor(uint packed)
     );
 }
 
-RayHit intersectVoxel(vec3 ro, vec3 rd)
+uint intersectVoxel(vec3 ro, vec3 rd, out vec3 rayPos)
 {
-    RayHit hit;
-    hit.material = 0;
-
-    hit.voxel = ivec3(floor(ro));
-
+    ivec3 voxel = ivec3(floor(ro));
     ivec3 step = ivec3(sign(rd));
+    vec3 tDelta = abs(1.0 / rd);
 
-    vec3 tDelta = abs(vec3(length(rd)) / rd);
-    vec3 nextBoundary = vec3(hit.voxel) + vec3(greaterThan(rd, vec3(0.0)));
+    vec3 nextBoundary = vec3(voxel) + vec3(greaterThan(rd, vec3(0.0)));
     vec3 tMax = (nextBoundary - ro) / rd;
 
-    for (int i = 0; i < MAX_STEPS; ++i) {
-        hit.material = imageLoad(voxelData, hit.voxel).r;
+    rayPos = ro;
 
-        if(hit.material > 0)
+    for (int i = 0; i < 256; ++i) {
+        uint index = uint(imageLoad(voxelData, voxel).r);
+
+        if(index > 0)
         {
-            hit.pos = ro + rd * tMax;
-            uint packedColor = palette[hit.material - 1];
-            return hit;
+            rayPos += rd * tMax;
+            return index;
         }
 
         if (tMax.x < tMax.y && tMax.x < tMax.z) {
-            hit.voxel.x += step.x;
+            voxel.x += step.x;
             tMax.x += tDelta.x;
-            hit.normal = vec3(-step.x, 0, 0);
         } else if (tMax.y < tMax.z) {
-            hit.voxel.y += step.y;
+            voxel.y += step.y;
             tMax.y += tDelta.y;
-            hit.normal = vec3(0, -step.y, 0);
         } else {
-            hit.voxel.z += step.z;
+            voxel.z += step.z;
             tMax.z += tDelta.z;
-            hit.normal = vec3(0, 0, -step.z);
         }
     }
 
-    return hit;
+    return 0;
 }
 
 void main()
@@ -112,12 +97,13 @@ void main()
     vec4 color = vec4(0.0);
 
     vec3 rayPos;
-    RayHit hit = intersectVoxel(rayOrigin, rayDir);
+    uint index = intersectVoxel(rayOrigin, rayDir, rayPos);
 
-    if(hit.material > 0)
-    {
-        color = vec4(reflect(rayDir, hit.normal), 1);
+    if (index > 0) {
+        uint packedColor = palette[index - 1];
+        color = unpackColor(packedColor);
         imageStore(image, pixelCoord, color);
+
     } else if(time > 0) {
         float a = 0.5 * (rayDir.y + 1);
         vec3 aColor = {1.0, 1.0, 1.0};
@@ -128,3 +114,34 @@ void main()
         imageStore(image, pixelCoord, color);
     }
 }
+
+
+// bool intersectVoxel(vec3 ro, vec3 rd)
+// {
+//     ivec3 voxel = ivec3(floor(ro));
+//
+//     ivec3 step = ivec3(sign(rd));
+//
+//     vec3 tDelta = step / rd;
+//     vec3 nextVoxelBoundary = voxel + step;
+//     vec3 tMax = (nextVoxelBoundary - ro) / rd;
+//
+//     for (int i = 0; i < 32; ++i) {
+//         if(getVoxel(voxel)) {
+//             return true;
+//         }
+//
+//         if(tMax.x < tMax.y && tMax.x < tMax.z) {
+//             tMax.x += tDelta.x;
+//             voxel.x += step.x;
+//         } else if(tMax.y < tMax.z) {
+//             tMax.y += tDelta.y;
+//             voxel.y += step.y;
+//         } else {
+//             tMax.z += tDelta.z;
+//             voxel.z += step.z;
+//         }
+//     }
+//
+//     return false;
+// }

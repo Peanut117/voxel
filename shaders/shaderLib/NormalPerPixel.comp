@@ -25,7 +25,7 @@ layout(binding = 3, std140) uniform UniformBufferObject {
 
 struct RayHit {
     vec3 pos;
-    vec3 normal;
+    vec3 norm;
     ivec3 voxel;
     uint material;
 };
@@ -33,14 +33,26 @@ struct RayHit {
 const float EPSILON = 1e-3;
 const uint MAX_STEPS = 256;
 
-vec4 unpackColor(uint packed)
-{
+vec4 unpackColor(uint packed) {
     return vec4(
         float((packed >>  0) & 0xFF) / 255.0,
         float((packed >>  8) & 0xFF) / 255.0,
         float((packed >> 16) & 0xFF) / 255.0,
         float((packed >> 24) & 0xFF) / 255.0
     );
+}
+
+vec3 lighting(vec3 norm, vec3 pos, vec3 rd, vec3 col) {
+    vec3 lightDir = normalize(vec3(-1.0, 3.0, -1.0));
+    float diffuseAttn = max(dot(norm, lightDir), 0.0);
+    vec3 light = vec3(1.0,0.9,0.9);
+    
+    vec3 ambient = vec3(0.2, 0.2, 0.3);
+    
+    vec3 reflected = reflect(rd, norm);
+    float specularAttn = max(dot(reflected, lightDir), 0.0);
+    
+    return col*(diffuseAttn*light*1.0 + specularAttn*light*0.6 + ambient);
 }
 
 RayHit intersectVoxel(vec3 ro, vec3 rd)
@@ -63,21 +75,23 @@ RayHit intersectVoxel(vec3 ro, vec3 rd)
         {
             hit.pos = ro + rd * tMax;
             uint packedColor = palette[hit.material - 1];
+            vec3 color = unpackColor(packedColor).xyz;
+            // hit.norm = lighting(hit.norm, hit.voxel, rd, color);
             return hit;
         }
 
         if (tMax.x < tMax.y && tMax.x < tMax.z) {
             hit.voxel.x += step.x;
             tMax.x += tDelta.x;
-            hit.normal = vec3(-step.x, 0, 0);
+            hit.norm = vec3(-step.x, 0, 0);
         } else if (tMax.y < tMax.z) {
             hit.voxel.y += step.y;
             tMax.y += tDelta.y;
-            hit.normal = vec3(0, -step.y, 0);
+            hit.norm = vec3(0, -step.y, 0);
         } else {
             hit.voxel.z += step.z;
             tMax.z += tDelta.z;
-            hit.normal = vec3(0, 0, -step.z);
+            hit.norm = vec3(0, 0, -step.z);
         }
     }
 
@@ -114,9 +128,10 @@ void main()
     vec3 rayPos;
     RayHit hit = intersectVoxel(rayOrigin, rayDir);
 
-    if(hit.material > 0)
-    {
-        color = vec4(reflect(rayDir, hit.normal), 1);
+    if (hit.material > 0) {
+        vec3 normal = normalize(hit.pos - vec3(0, 0, 1));
+        // color = vec4(hit.norm, 1);
+        color = vec4(normal, 1);
         imageStore(image, pixelCoord, color);
     } else if(time > 0) {
         float a = 0.5 * (rayDir.y + 1);

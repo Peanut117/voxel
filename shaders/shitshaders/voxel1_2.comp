@@ -1,0 +1,115 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba16f) uniform writeonly image2D outputImage;
+layout(binding = 1, r8ui) uniform readonly uimage3D voxelVolume;
+
+layout(binding = 2, std430) buffer Palette {
+    uint palette[];
+};
+
+layout(binding = 3, std140) uniform Camera {
+    mat4 viewProj;
+    vec3 position;
+    vec3 forward;
+    vec3 right;
+    vec3 up;
+    float fov;
+    float time;
+};
+
+const float MAX_DIST = 100.0;
+const int MAX_STEPS = 512;
+
+vec3 getRayDir(uvec2 pixel, uvec2 screenSize) {
+    vec2 uv = (vec2(pixel) + 0.5) / vec2(screenSize) * 2.0 - 1.0;
+    uv.x *= float(screenSize.x) / float(screenSize.y);
+    float focalLength = 1.0 / tan(radians(fov) * 0.5);
+    return normalize(uv.x * right + uv.y * up + focalLength * forward);
+}
+
+vec4 fetchColor(uint voxelIndex) {
+    uint color = palette[voxelIndex];
+    return vec4(
+        float((color >>  0) & 0xFF) / 255.0,
+        float((color >>  8) & 0xFF) / 255.0,
+        float((color >> 16) & 0xFF) / 255.0,
+        1.0
+    );
+}
+
+bool sampleVoxel(ivec3 coord, out uint voxel) {
+    ivec3 size = imageSize(voxelVolume);
+    if (any(lessThan(coord, ivec3(0))) || any(greaterThanEqual(coord, size))) return false;
+    voxel = imageLoad(voxelVolume, coord).r;
+    return voxel != 0u;
+}
+
+vec3 computeNormal(ivec3 coord) {
+    uint vx1, vx2, vy1, vy2, vz1, vz2;
+    float dx = float(sampleVoxel(coord + ivec3(1,0,0), vx1)) - float(sampleVoxel(coord - ivec3(1,0,0), vx2));
+    float dy = float(sampleVoxel(coord + ivec3(0,1,0), vy1)) - float(sampleVoxel(coord - ivec3(0,1,0), vy2));
+    float dz = float(sampleVoxel(coord + ivec3(0,0,1), vz1)) - float(sampleVoxel(coord - ivec3(0,0,1), vz2));
+    return normalize(vec3(dx, dy, dz));
+}
+
+vec3 phongLighting(vec3 pos, vec3 normal, vec3 viewDir, vec3 lightDir, vec3 baseColor) {
+    vec3 diff = max(dot(normal, lightDir), 0.0) * baseColor;
+    vec3 halfDir = normalize(viewDir + lightDir);
+    float spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+    return clamp(diff + vec3(spec), 0.0, 1.0);
+}
+
+void main() {
+    uvec2 pixel = gl_GlobalInvocationID.xy;
+    uvec2 screenSize = imageSize(outputImage);
+    if (any(greaterThanEqual(pixel, screenSize))) return;
+
+    vec3 rayOrigin = position;
+    vec3 rayDir = getRayDir(pixel, screenSize);
+    rayDir = normalize(rayDir);
+
+    if (any(isnan(rayDir)) || length(rayDir) < 1e-6) {
+        imageStore(outputImage, ivec2(pixel), vec4(0.0));
+        return;
+    }
+
+    ivec3 voxelPos = ivec3(floor(rayOrigin));
+    vec3 deltaDist = abs(vec3(1.0) / max(abs(rayDir), vec3(1e-6)));
+    ivec3 step = ivec3(sign(rayDir));
+
+    vec3 voxelBorder = vec3(voxelPos) + step * 0.5 + 0.5;
+    vec3 tMax = (voxelBorder - rayOrigin) / max(rayDir, vec3(1e-6));
+
+    float t = 0.0;
+    for (int i = 0; i < MAX_STEPS && t < MAX_DIST; ++i) {
+        uint voxel;
+        if (sampleVoxel(voxelPos, voxel)) {
+            vec3 hitPos = rayOrigin + rayDir * t;
+            vec4 baseColor = fetchColor(voxel);
+            vec3 normal = computeNormal(voxelPos);
+            vec3 lightDir = normalize(vec3(1, 1, 1));
+            vec3 color = phongLighting(hitPos, normal, -rayDir, lightDir, baseColor.rgb);
+            imageStore(outputImage, ivec2(pixel), vec4(color, 1.0));
+            return;
+        }
+
+        if (tMax.x < tMax.y && tMax.x < tMax.z) {
+            voxelPos.x += step.x;
+            t = tMax.x;
+            tMax.x += deltaDist.x;
+        } else if (tMax.y < tMax.z) {
+            voxelPos.y += step.y;
+            t = tMax.y;
+            tMax.y += deltaDist.y;
+        } else {
+            voxelPos.z += step.z;
+            t = tMax.z;
+            tMax.z += deltaDist.z;
+        }
+    }
+
+    imageStore(outputImage, ivec2(pixel), vec4(0.0));
+}
+

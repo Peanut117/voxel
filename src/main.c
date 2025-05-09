@@ -4,6 +4,8 @@
 
 #include "pis/engine.h"
 
+UniformBufferObject ubo = {0};
+
 bool processInput(PisEngine* pis)
 {
     SDL_Event event;
@@ -13,6 +15,9 @@ bool processInput(PisEngine* pis)
         //User requests quit
         if(event.type == SDL_EVENT_QUIT)
             return false;
+
+        if(event.type == SDL_EVENT_KEY_UP && event.key.scancode == SDL_SCANCODE_RETURN)
+            ubo.time = !ubo.time;
     }
 
     return true;
@@ -30,11 +35,11 @@ int main(void)
     pis->windowExtent.width = 1280;
     pis->windowExtent.height = 720;
 
-    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/monument/monu16.vox");
+    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#odyssey/#odyssey_scene.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/character/chr_fox.vox");
 
     PisEngineInitialize(pis);
-
-    UniformBufferObject ubo = {0};
 
     const bool* keys = SDL_GetKeyboardState(NULL);
 
@@ -44,9 +49,8 @@ int main(void)
     SDL_SetWindowRelativeMouseMode(pis->window, true);
     float pitch = 0.f, yaw = 0.f;
 
-    ubo.fov = 90.0f;
-
     float moveSpeed = 0.1;
+    ubo.fov = 90.f;
 
     while(processInput(pis))
     {
@@ -108,7 +112,8 @@ int main(void)
 
         glm_vec3_add(ubo.position, delta, ubo.position);
 
-        ubo.time = (float)SDL_GetTicks() / 1000.f;
+        // ubo.time = (float)SDL_GetTicks() / 1000.f;
+        ubo.time = true;
 
         UpdateUniformBuffer(pis, ubo);
 

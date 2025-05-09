@@ -1,0 +1,194 @@
+//GLSL version to use
+#version 450
+
+//size of a workgroup for compute
+layout (local_size_x = 16, local_size_y = 16) in;
+
+//descriptor bindings for the pipeline
+layout(binding = 0, rgba16f) uniform writeonly image2D image;
+
+layout(binding = 1, r8ui) uniform readonly uimage3D voxelData;
+
+layout(binding = 2, std430) buffer PaletteData {
+    uint palette[];
+};
+
+layout(binding = 3, std140) uniform UniformBufferObject {
+    vec3 position;
+    vec3 forward;
+    vec3 right;
+    vec3 up;
+
+    float fov;
+    float time;
+};
+
+const float EPSILON = 1e-4;
+
+const ivec3 LIGHTNING_POS = ivec3(4, 50, 0);
+
+vec4 unpackColor(uint packed) {
+    return vec4(
+        float((packed >>  0) & 0xFF) / 255.0,
+        float((packed >>  8) & 0xFF) / 255.0,
+        float((packed >> 16) & 0xFF) / 255.0,
+        float((packed >> 24) & 0xFF) / 255.0
+    );
+}
+
+vec3 estimateNormal(ivec3 voxelPos) {
+    // Sample neighboring voxels
+    float x1 = imageLoad(voxelData, voxelPos + ivec3(1, 0, 0)).r;
+    float x2 = imageLoad(voxelData, voxelPos - ivec3(1, 0, 0)).r;
+    float y1 = imageLoad(voxelData, voxelPos + ivec3(0, 1, 0)).r;
+    float y2 = imageLoad(voxelData, voxelPos - ivec3(0, 1, 0)).r;
+    float z1 = imageLoad(voxelData, voxelPos + ivec3(0, 0, 1)).r;
+    float z2 = imageLoad(voxelData, voxelPos - ivec3(0, 0, 1)).r;
+    
+    return normalize(vec3(x1 - x2, y1 - y2, z1 - z2));
+}
+
+uint intersectVoxel(vec3 ro, vec3 rd, out vec3 rayPos)
+{
+    ivec3 voxel = ivec3(floor(ro));
+    ivec3 step = ivec3(sign(rd));
+    vec3 tDelta = abs(1.0 / rd);
+
+    vec3 nextBoundary = vec3(voxel) + vec3(greaterThan(rd, vec3(0.0)));
+    vec3 tMax = (nextBoundary - ro) / rd;
+
+    rayPos = ro;
+
+    for (int i = 0; i < 256; ++i) {
+        uint index = uint(imageLoad(voxelData, voxel).r);
+
+        if(index > 0)
+        {
+            rayPos += rd * tMax;
+            return index;
+        }
+
+        if(voxel == LIGHTNING_POS)
+        {
+            rayPos += rd * tMax;
+            return 0xFFFFFFFF;
+        }
+
+        if (tMax.x < tMax.y && tMax.x < tMax.z) {
+            voxel.x += step.x;
+            tMax.x += tDelta.x;
+        } else if (tMax.y < tMax.z) {
+            voxel.y += step.y;
+            tMax.y += tDelta.y;
+        } else {
+            voxel.z += step.z;
+            tMax.z += tDelta.z;
+        }
+    }
+
+    return 0;
+}
+
+void main()
+{
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 imageSize = imageSize(image);
+
+    float aspectRatio = float(imageSize.x) / float(imageSize.y);
+
+    if(pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
+        return;
+
+    // Convert pixel coord to NDC
+    vec2 uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / imageSize;
+    uv = uv * 2.0 - 1.0;
+    uv.x *= aspectRatio;
+
+    vec3 rayDir = normalize(
+        forward +
+        uv.x * tan(radians(fov) * 0.5) * right +
+        uv.y * tan(radians(fov) * 0.5) * -up
+    );
+
+    vec3 rayOrigin = position;
+    rayOrigin += rayDir * EPSILON; // Nudge forward to avoid self-intersection
+
+    bool t;
+    vec4 color = vec4(0.0);
+
+    vec3 rayPos;
+    uint index = intersectVoxel(rayOrigin, rayDir, rayPos);
+
+    if (index == 0xFFFFFFFF) {
+        imageStore(image, pixelCoord, vec4(1));  // White for light
+    } else if (index > 0) {
+        uint packedColor = palette[index - 1];
+        color = unpackColor(packedColor);
+
+        vec3 lightDir = normalize(vec3(LIGHTNING_POS) + vec3(0.5) - rayPos);
+        vec3 shadowOrigin = rayPos + lightDir * max(0.05, 2.0 * EPSILON);
+
+        // Get normal properly
+        vec3 normal = estimateNormal(ivec3(floor(rayPos + EPSILON)));
+        float lightFacing = dot(lightDir, normal);
+
+        if (lightFacing < 0.0) {
+            color *= 0.1;
+            imageStore(image, pixelCoord, color);
+            return;  // Skip shadow ray for backfaces
+        }
+
+        // Shadow ray test
+        vec3 shadowHit;
+        uint shadowIndex = intersectVoxel(shadowOrigin, lightDir, shadowHit);
+        float distToLight = distance(shadowOrigin, vec3(LIGHTNING_POS) + vec3(0.5));
+        float distToShadowHit = distance(shadowOrigin, shadowHit);
+
+        const float SHADOW_EPSILON = 0.01;
+        if (shadowIndex > 0 && shadowIndex != 0xFFFFFFFF && 
+            (distToShadowHit + SHADOW_EPSILON) < distToLight) {
+            color *= 0.5;
+        }
+
+        imageStore(image, pixelCoord, color);
+    } else if(time > 0) {
+        float a = 0.5 * (rayDir.y + 1);
+        vec3 aColor = {1.0, 1.0, 1.0};
+        vec3 bColor = {0.5, 0.7, 1.0};
+        color.xyz = aColor + (bColor - aColor) * a;
+        imageStore(image, pixelCoord, color);
+    } else {
+        imageStore(image, pixelCoord, color);
+    }
+}
+
+
+// bool intersectVoxel(vec3 ro, vec3 rd)
+// {
+//     ivec3 voxel = ivec3(floor(ro));
+//
+//     ivec3 step = ivec3(sign(rd));
+//
+//     vec3 tDelta = step / rd;
+//     vec3 nextVoxelBoundary = voxel + step;
+//     vec3 tMax = (nextVoxelBoundary - ro) / rd;
+//
+//     for (int i = 0; i < 32; ++i) {
+//         if(getVoxel(voxel)) {
+//             return true;
+//         }
+//
+//         if(tMax.x < tMax.y && tMax.x < tMax.z) {
+//             tMax.x += tDelta.x;
+//             voxel.x += step.x;
+//         } else if(tMax.y < tMax.z) {
+//             tMax.y += tDelta.y;
+//             voxel.y += step.y;
+//         } else {
+//             tMax.z += tDelta.z;
+//             voxel.z += step.z;
+//         }
+//     }
+//
+//     return false;
+// }
