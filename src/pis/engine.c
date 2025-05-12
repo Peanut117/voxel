@@ -20,6 +20,7 @@
 #include "pisdef.h"
 
 #include "volk.h"
+#include "voxLoader.h"
 #include "vulkan/vulkan_core.h"
 
 /* ===================================Functions==================================== */
@@ -179,6 +180,8 @@ void PisEngineDraw(PisEngine* pis)
 void PisEngineCleanup(PisEngine* pis)
 {
     VkDevice device = pis->vk.device;
+
+    CloseVoxFile(pis->voxelData);
 
     vkDeviceWaitIdle(device);
 

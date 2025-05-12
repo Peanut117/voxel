@@ -24,14 +24,16 @@ layout(binding = 3, std140) uniform UniformBufferObject {
 };
 
 struct RayHit {
+    bool isHit;
     vec3 pos;
     vec3 normal;
+    vec3 color;
     ivec3 voxel;
-    uint material;
 };
 
 const float EPSILON = 1e-3;
 const uint MAX_STEPS = 256;
+const uint SAMPLES_PER_PIXEL = 4;
 
 vec4 unpackColor(uint packed)
 {
@@ -43,10 +45,23 @@ vec4 unpackColor(uint packed)
     );
 }
 
+float hash1(inout float seed) {
+    return fract(sin(seed += 0.1)*43758.5453123);
+}
+
+vec2 hash2(inout float seed) {
+    return fract(sin(vec2(seed+=0.1,seed+=0.1))*vec2(43758.5453123,22578.1459123));
+}
+
+vec3 hash3(inout float seed) {
+    return fract(sin(vec3(seed+=0.1,seed+=0.1,seed+=0.1))*vec3(43758.5453123,22578.1459123,19642.3490423));
+}
+
 RayHit intersectVoxel(vec3 ro, vec3 rd)
 {
     RayHit hit;
-    hit.material = 0;
+
+    hit.isHit = false;
 
     hit.voxel = ivec3(floor(ro));
 
@@ -57,12 +72,13 @@ RayHit intersectVoxel(vec3 ro, vec3 rd)
     vec3 tMax = (nextBoundary - ro) / rd;
 
     for (int i = 0; i < MAX_STEPS; ++i) {
-        hit.material = imageLoad(voxelData, hit.voxel).r;
+        uint index = imageLoad(voxelData, hit.voxel).r;
 
-        if(hit.material > 0)
+        if(index > 0)
         {
             hit.pos = ro + rd * tMax;
-            uint packedColor = palette[hit.material - 1];
+            hit.color = unpackColor(palette[index - 1]).xyz;
+            hit.isHit = true;
             return hit;
         }
 
@@ -94,37 +110,49 @@ void main()
     if(pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
         return;
 
-    // Convert pixel coord to NDC
-    vec2 uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / imageSize;
-    uv = uv * 2.0 - 1.0;
-    uv.x *= aspectRatio;
+    vec3 color = vec3(0.0);
 
-    vec3 rayDir = normalize(
-        forward +
-        uv.x * tan(radians(fov) * 0.5) * right +
-        uv.y * tan(radians(fov) * 0.5) * -up
-    );
+    float seed = pixelCoord.x + pixelCoord.y * 3.43121412313;
 
-    vec3 rayOrigin = position;
-    rayOrigin += rayDir * EPSILON; // Nudge forward to avoid self-intersection
+    RayHit hit;
 
-    bool t;
-    vec4 color = vec4(0.0);
-
-    vec3 rayPos;
-    RayHit hit = intersectVoxel(rayOrigin, rayDir);
-
-    if(hit.material > 0)
+    for(int i = 0; i < SAMPLES_PER_PIXEL; i++)
     {
-        color = vec4(reflect(rayDir, hit.normal), 1);
-        imageStore(image, pixelCoord, color);
-    } else if(time > 0) {
-        float a = 0.5 * (rayDir.y + 1);
-        vec3 aColor = {1.0, 1.0, 1.0};
-        vec3 bColor = {0.5, 0.7, 1.0};
-        color.xyz = aColor + (bColor - aColor) * a;
-        imageStore(image, pixelCoord, color);
-    } else {
-        imageStore(image, pixelCoord, color);
+        // Fixed offset multisampling -- Can only be used for 2x2
+        vec2 uv = (vec2(pixelCoord) + vec2(0.25 + max(1, i * 0.5), 0.25 + min(0, i*0.5))) / imageSize;
+
+        // Random offset multisampling
+        // vec2 offset = vec2(hash2(seed) - 0.5);
+        // vec2 uv = (vec2(pixelCoord) + offset) / imageSize;
+
+        uv = uv * 2.0 - 1.0;
+        uv.x *= aspectRatio;
+
+        vec3 rayDir = normalize(
+            forward +
+            uv.x * tan(radians(fov) * 0.5) * right +
+            uv.y * tan(radians(fov) * 0.5) * -up
+        );
+
+        vec3 rayOrigin = position;
+        rayOrigin += rayDir * EPSILON; // Nudge forward to avoid self-intersection
+
+        hit = intersectVoxel(rayOrigin, rayDir);
+
+        if(hit.isHit)
+        {
+            color += hit.color;
+        } else {
+            // Sky gradient -- Uncomment if use
+            float a = 0.5 * (rayDir.y + 1);
+            vec3 aColor = {1.0, 1.0, 1.0};
+            vec3 bColor = {0.5, 0.7, 1.0};
+            color.xyz += aColor + (bColor - aColor) * a;
+        }
     }
+
+    // Calculate color
+    color = color / float(SAMPLES_PER_PIXEL);
+
+    imageStore(image, pixelCoord, vec4(color, 1.0));
 }

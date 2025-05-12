@@ -35,9 +35,13 @@ int main(void)
     pis->windowExtent.width = 1280;
     pis->windowExtent.height = 720;
 
-    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#odyssey/#odyssey_scene.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/character/chr_fox.vox");
+    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/castle.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/Church_Of_St_Sophia.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/nuke.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/scan/dragon.vox");
 
     PisEngineInitialize(pis);
 
@@ -112,8 +116,7 @@ int main(void)
 
         glm_vec3_add(ubo.position, delta, ubo.position);
 
-        // ubo.time = (float)SDL_GetTicks() / 1000.f;
-        ubo.time = true;
+        ubo.time = (float)SDL_GetTicks() / 1000.f;
 
         UpdateUniformBuffer(pis, ubo);
 

@@ -36,5 +36,6 @@ typedef struct {
 } Vox;
 
 Vox ReadVoxFile(char* fileName);
+void CloseVoxFile(Vox vox);
 
 #endif
