@@ -121,7 +121,7 @@ void PisEngineDraw(PisEngine* pis)
                             pis->vk.compute.layout, 0, 1,
                             &pis->vk.descriptor.set, 0, NULL);
 
-    DrawBackground(cmd, pis);
+    // DrawBackground(cmd, pis);
 
     vkCmdDispatch(cmd, pis->vk.drawImage.extent.width / 16, pis->vk.drawImage.extent.height / 16, 1);
 
@@ -132,7 +132,9 @@ void PisEngineDraw(PisEngine* pis)
     CopyImageToImage(cmd, pis->vk.drawImage.image, pis->vk.swapchainImages[swapchainImageIndex],
                      pis->vk.drawExtent, pis->vk.swapchainExtent);
 
-    TransitionImage(cmd, pis->vk.swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    TransitionImage(cmd, pis->vk.swapchainImages[swapchainImageIndex],
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VK_CHECK(vkEndCommandBuffer(cmd));
 

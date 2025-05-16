@@ -14,7 +14,7 @@ layout(binding = 2, std430) buffer PaletteData {
 };
 
 layout(binding = 3, std140) uniform UniformBufferObject {
-    vec3 position;
+    vec3 eye;
     vec3 forward;
     vec3 right;
     vec3 up;
@@ -23,17 +23,65 @@ layout(binding = 3, std140) uniform UniformBufferObject {
     float time;
 };
 
-struct RayHit {
-    bool isHit;
-    vec3 pos;
-    vec3 normal;
-    vec3 color;
-    ivec3 voxel;
+struct Ray {
+    vec3 origin;
+    vec3 direction;
 };
 
-const float EPSILON = 1e-3;
+struct RayHitInternal {
+    vec3 pos;
+    vec3 sideDist;
+    vec3 tDelta;
+    ivec3 step;
+    uint material;
+    bvec3 mask;
+};
+
+struct RayHit{
+    uint material;
+    vec3 pos;
+    vec3 normal;
+    vec3 dir;
+};
+
+struct Material {
+    vec4 color;
+};
+
+ivec3 gridSize = imageSize(voxelData);
+vec2 imageSize = imageSize(image);
+
+const float EPSILON = 1e-2;
 const uint MAX_STEPS = 256;
-const uint SAMPLES_PER_PIXEL = 4;
+const uint MAX_BOUNCES = 2;
+
+const vec3 LIGHT_DIR = normalize(vec3(-5.0, 5.0, -3));
+const vec3 LIGHT_COLOR = vec3(1.0);
+const float LIGHT_INTENSITY = 1.0;
+
+float seed = time + gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 3.43121412313;
+
+Ray InitCamera(inout vec2 uv)
+{
+    float aspectRatio = float(imageSize.x) / float(imageSize.y);
+
+    uv = (vec2(gl_GlobalInvocationID.xy) + 0.5) / imageSize;
+    uv = uv * 2.0 - 1.0;
+    uv.x *= aspectRatio;
+
+    Ray ray;
+
+    ray.direction = normalize(
+        forward +
+        uv.x * tan(radians(fov) * 0.5) * right +
+        uv.y * tan(radians(fov) * 0.5) * -up
+    );
+
+    ray.origin = eye;
+
+    return ray;
+
+}
 
 vec4 unpackColor(uint packed)
 {
@@ -44,6 +92,7 @@ vec4 unpackColor(uint packed)
         float((packed >> 24) & 0xFF) / 255.0
     );
 }
+
 
 float hash1(inout float seed) {
     return fract(sin(seed += 0.1)*43758.5453123);
@@ -57,102 +106,177 @@ vec3 hash3(inout float seed) {
     return fract(sin(vec3(seed+=0.1,seed+=0.1,seed+=0.1))*vec3(43758.5453123,22578.1459123,19642.3490423));
 }
 
-RayHit intersectVoxel(vec3 ro, vec3 rd)
+vec3 hashOnNormal(inout float seed, in vec3 normal) {
+    vec3 onNormal = hash3(seed);
+    return reflect(onNormal, normal);
+}
+
+vec3 boxIntersection(Ray ray) {
+    vec3 invDir = 1.0 / ray.direction;
+
+    vec3 t1 = (-ray.origin) * invDir;
+    vec3 t2 = (vec3(gridSize) - ray.origin) * invDir;
+    vec3 tminDir = min(t1, t2);
+    vec3 tmaxDir = max(t1, t2);
+
+    float tmin = max(tminDir.x, max(tminDir.y, tminDir.z));
+    float tmax = min(tmaxDir.x, min(tmaxDir.y, tmaxDir.z));
+
+    if (tmin >= 0 && tmax >= tmin) {
+        return ray.origin + (tmin + 0.1) * ray.direction;
+    } else {
+        return ray.origin;
+    }
+}
+
+RayHitInternal traceRayInternal(Ray ray)
 {
-    RayHit hit;
+    RayHitInternal result;
+    result.material = 0;
 
-    hit.isHit = false;
+    result.pos = boxIntersection(ray);
+    ivec3 voxel = ivec3(floor(result.pos));
 
-    hit.voxel = ivec3(floor(ro));
+    result.step = ivec3(sign(ray.direction));
+    result.tDelta = abs(1.0 / ray.direction);
+    result.sideDist = (sign(ray.direction) * (vec3(voxel) - result.pos) + (sign(ray.direction) * 0.5) + 0.5) * result.tDelta;
 
-    ivec3 step = ivec3(sign(rd));
-
-    vec3 tDelta = abs(vec3(length(rd)) / rd);
-    vec3 nextBoundary = vec3(hit.voxel) + vec3(greaterThan(rd, vec3(0.0)));
-    vec3 tMax = (nextBoundary - ro) / rd;
-
-    for (int i = 0; i < MAX_STEPS; ++i) {
-        uint index = imageLoad(voxelData, hit.voxel).r;
-
-        if(index > 0)
+    for(uint i = 0; i < MAX_STEPS; i++)
+    {
+        if (voxel.x < 0 || voxel.x >= gridSize.x
+        ||  voxel.y < 0 || voxel.y >=  gridSize.y
+        ||  voxel.z < 0 || voxel.z >=  gridSize.z)
         {
-            hit.pos = ro + rd * tMax;
-            hit.color = unpackColor(palette[index - 1]).xyz;
-            hit.isHit = true;
-            return hit;
+            break;
         }
 
-        if (tMax.x < tMax.y && tMax.x < tMax.z) {
-            hit.voxel.x += step.x;
-            tMax.x += tDelta.x;
-            hit.normal = vec3(-step.x, 0, 0);
-        } else if (tMax.y < tMax.z) {
-            hit.voxel.y += step.y;
-            tMax.y += tDelta.y;
-            hit.normal = vec3(0, -step.y, 0);
-        } else {
-            hit.voxel.z += step.z;
-            tMax.z += tDelta.z;
-            hit.normal = vec3(0, 0, -step.z);
+        result.material = imageLoad(voxelData, voxel).r;
+        if(result.material != 0)
+        {
+            break;
         }
+
+        result.mask = lessThanEqual(result.sideDist.xyz, min(result.sideDist.yzx, result.sideDist.zxy));
+
+        result.sideDist += vec3(result.mask) * result.tDelta;
+
+        voxel += ivec3(vec3(result.mask)) * result.step;
     }
 
-    return hit;
+    return result;
+}
+
+RayHit traceRay(Ray ray)
+{
+    RayHitInternal internal = traceRayInternal(ray);
+
+    RayHit result;
+    result.material = internal.material;
+    result.dir = ray.direction;
+
+    if(result.material != 0)
+    {
+        result.normal = normalize(vec3(internal.mask) * -vec3(internal.step));
+        
+        float d = length(vec3(internal.mask) * (internal.sideDist - internal.tDelta));
+        result.pos = internal.pos + d * ray.direction;
+    }
+
+    return result;
+}
+
+bool traceRayHit(Ray ray)
+{
+    RayHitInternal internal = traceRayInternal(ray);
+    return internal.material != 0;
+}
+
+bool isShadowed(RayHit hit)
+{
+    return traceRayHit(Ray(hit.pos + hit.normal * EPSILON, LIGHT_DIR));
+}
+
+Material unpackMaterials(uint material)
+{
+    Material result;
+    result.color = unpackColor(palette[material-1]);
+    return result;
+}
+
+vec3 skyHit(vec3 rayDir)
+{
+    float a = 0.5 * (rayDir.y + 1);
+    vec3 aColor = {1.0, 1.0, 1.0};
+    vec3 bColor = {0.5, 0.7, 1.0};
+    return aColor + (bColor - aColor) * a;
+}
+
+vec3 colorHit(RayHit hit, uint depth)
+{
+    Material material = unpackMaterials(hit.material);
+    bool isShadow = isShadowed(hit);
+
+    if(hit.material == 0)
+    {
+        return skyHit(hit.dir);
+    }
+
+    vec3 ambient = vec3(0.3);
+    vec3 diffuse = vec3(0.0);
+    if(!isShadow)
+    {
+        float diff = max(dot(hit.normal, LIGHT_DIR), 0.0);
+        diffuse = diff * LIGHT_COLOR * LIGHT_INTENSITY;
+    }
+
+    return ((diffuse + ambient) * material.color.rgb) * 1.0 / float(depth+1);
+}
+
+vec3 colorRay(RayHit hit)
+{
+    // vec3 diffuse = vec3(0.0);
+
+    // for(int i = 0; i < MAX_BOUNCES; i++)
+    // {
+    //     // vec3 diffuseDir = reflect(hit.dir, hit.normal);
+    //     vec3 diffuseDir = hit.normal + hashOnNormal(seed, hit.normal);
+    //     RayHit diffuseHit = traceRay(Ray(hit.pos + hit.normal * EPSILON, diffuseDir));
+    //
+    //     // if(diffuseHit.material == 0)
+    //     // {
+    //     //     break;
+    //     // }
+    //
+    //     diffuse += colorHit(diffuseHit, diffuse, MAX_BOUNCES);
+    // }
+    //
+    // diffuse /= MAX_BOUNCES;
+
+    return colorHit(hit, 0);
 }
 
 void main()
 {
     ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 imageSize = imageSize(image);
 
-    float aspectRatio = float(imageSize.x) / float(imageSize.y);
-
-    if(pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
+    if (pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
         return;
 
-    vec3 color = vec3(0.0);
+    vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
-    float seed = pixelCoord.x + pixelCoord.y * 3.43121412313;
+    vec2 uv;
+    Ray cam = InitCamera(uv);
 
-    RayHit hit;
+    RayHit hit = traceRay(cam);
 
-    for(int i = 0; i < SAMPLES_PER_PIXEL; i++)
+    if(hit.material != 0)
     {
-        // Fixed offset multisampling -- Can only be used for 2x2
-        vec2 uv = (vec2(pixelCoord) + vec2(0.25 + max(1, i * 0.5), 0.25 + min(0, i*0.5))) / imageSize;
-
-        // Random offset multisampling
-        // vec2 offset = vec2(hash2(seed) - 0.5);
-        // vec2 uv = (vec2(pixelCoord) + offset) / imageSize;
-
-        uv = uv * 2.0 - 1.0;
-        uv.x *= aspectRatio;
-
-        vec3 rayDir = normalize(
-            forward +
-            uv.x * tan(radians(fov) * 0.5) * right +
-            uv.y * tan(radians(fov) * 0.5) * -up
-        );
-
-        vec3 rayOrigin = position;
-        rayOrigin += rayDir * EPSILON; // Nudge forward to avoid self-intersection
-
-        hit = intersectVoxel(rayOrigin, rayDir);
-
-        if(hit.isHit)
-        {
-            color += hit.color;
-        } else {
-            // Sky gradient -- Uncomment if use
-            float a = 0.5 * (rayDir.y + 1);
-            vec3 aColor = {1.0, 1.0, 1.0};
-            vec3 bColor = {0.5, 0.7, 1.0};
-            color.xyz += aColor + (bColor - aColor) * a;
-        }
+        color.rgb = colorRay(hit);
+    }
+    else
+    {
+        color.rgb = skyHit(cam.direction);
     }
 
-    // Calculate color
-    color = color / float(SAMPLES_PER_PIXEL);
-
-    imageStore(image, pixelCoord, vec4(color, 1.0));
+    imageStore(image, pixelCoord, color);
 }
