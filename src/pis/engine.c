@@ -274,25 +274,14 @@ void InitDrawImage(PisEngine* pis)
 void InitVoxelImage(PisEngine* pis)
 {
     Buffer stagingBuffer;
-    VkDeviceSize bufferSize = pis->voxelData.dimensions[0] * pis->voxelData.dimensions[1] * pis->voxelData.dimensions[2];
-
-    uint8_t* flattenedVoxelData = malloc(bufferSize);
-
-    for(size_t i = 0; i < pis->voxelData.count; i++)
-    {
-        flattenedVoxelData[
-            pis->voxelData.data[i].x +
-            pis->voxelData.data[i].y * pis->voxelData.dimensions[0] +
-            pis->voxelData.data[i].z * pis->voxelData.dimensions[0] * pis->voxelData.dimensions[1]] = pis->voxelData.data[i].colorIndex;
-    }
 
     CreateBuffer(pis->vk.device, pis->vk.physicalDevice,
-                 bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 pis->voxelData.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                  &stagingBuffer);
 
-    VK_CHECK(vkMapMemory(pis->vk.device, stagingBuffer.memory, 0, bufferSize, 0, &stagingBuffer.ptr));
-        memcpy(stagingBuffer.ptr, flattenedVoxelData, (size_t)bufferSize);
+    VK_CHECK(vkMapMemory(pis->vk.device, stagingBuffer.memory, 0, pis->voxelData.bufferSize, 0, &stagingBuffer.ptr));
+        memcpy(stagingBuffer.ptr, pis->voxelData.data, (size_t)pis->voxelData.bufferSize);
     vkUnmapMemory(pis->vk.device, stagingBuffer.memory);
 
     // Create images to draw to

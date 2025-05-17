@@ -301,6 +301,24 @@ void PrintDict(Dict_t dict)
     }
 }
 
+size_t idx(int x, int y, int z, ivec3 size)
+{
+    return (
+        x + 
+        y * size[0] + 
+        z * size[0]*size[1]
+    );
+}
+
+size_t idxV(VoxelData V, VoxSIZE_t size)
+{
+    return (
+        V.x + 
+        V.y * size.x + 
+        V.z * size.x*size.y
+    );
+}
+
 String_t ReadString(FILE* file)
 {
     String_t str = {0, NULL};
@@ -543,7 +561,8 @@ bool ReadChunkHeader(FILE* file, Chunk* chunk)
     return true;
 }
 
-void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
+// Lasttag not used currently, remove if not needed later
+void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, char* lastTag, bool* palettePresent)
 {
     if(!ReadChunkHeader(file, chunk))
         return;
@@ -554,7 +573,7 @@ void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
     if(TagCompare(chunk->tag, "PACK"))
     {
         // PACK_t PACK = ReadPACKChunk(file);
-        ExitError("Nu even niet");
+        ExitError("Handle the PACK tag");
     }
     else if(TagCompare(chunk->tag, "SIZE"))
     {
@@ -564,13 +583,23 @@ void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
         vox->dimensions[0] = SIZE.x;
         vox->dimensions[1] = SIZE.z;
         vox->dimensions[2] = SIZE.y;
-    }
-    else if(TagCompare(chunk->tag, "XYZI"))
-    {
-        XYZI_t XYZI = ReadXYZIChunk(file);
-        vox->count = XYZI.numVoxels;
 
-        vox->data = XYZI.voxelData;
+        // Folowed by chunk XYZI;
+        
+        ReadChunkHeader(file, chunk);
+
+        XYZI_t XYZI = ReadXYZIChunk(file);
+        if(!TagCompare(chunk->tag, "XYZI"))
+            ExitError("This tag should be XYZI");
+
+        vox->bufferSize = SIZE.x * SIZE.y * SIZE.z;
+
+        vox->data = malloc(vox->bufferSize);
+
+        for(size_t i = 0; i < XYZI.numVoxels; i++)
+        {
+            vox->data[idxV(XYZI.voxelData[i], SIZE)] = XYZI.voxelData[i].colorIndex;
+        }
 
         CloseXYZIChunk(XYZI);
     }
@@ -586,6 +615,7 @@ void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
     {
         // Transform Node Chunk
         nTRN_t nTRN = ReadnTRNChunk(file);
+
         ClosenTRNChunk(nTRN);
     }
     else if(TagCompare(chunk->tag, "nGRP"))
@@ -597,6 +627,11 @@ void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
     else if(TagCompare(chunk->tag, "nSHP"))
     {
         nSHP_t nSHP = ReadnSHPChunk(file);
+
+        for(uint32_t i = 0; i < nSHP.numModels; i++)
+        {
+            printf("Model IDs: %d\n", nSHP.modelIds[i]);
+        }
 
         ClosenSHPChunk(nSHP);
     }
@@ -631,8 +666,10 @@ void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, bool* palettePresent)
         PrintTag(chunk->tag);
         printf("size: %d\nchild size: %d\n", chunk->size, chunk->childSize);
         fseek(file, chunk->size, SEEK_CUR);
-        // return;
+        ExitError("oei");
     }
+
+    strncpy(lastTag, chunk->tag, 4);
 }
 
 void ReadMainChunk(FILE* file, Chunk* chunk, uint32_t* childCount, Vox* vox)
@@ -670,17 +707,17 @@ void ReadMainChunk(FILE* file, Chunk* chunk, uint32_t* childCount, Vox* vox)
             // Mallocate space for child chunks, this can be more
             // Might just make this one chunk that get's reused, might not :)
             chunk->childData = malloc(sizeof(Chunk) * tagCount);
+            char lastTag[4] = {0};
             for(int i = 0; i < tagCount; i++)
             {
-                ReadChildChunks(file, &chunk->childData[i], vox, &palettePresent);
+                ReadChildChunks(file, &chunk->childData[i], vox, lastTag, &palettePresent);
                 childCount++;
             }
 
             free(chunk->childData);
         }
     } else {
-        fprintf(stderr, "MAIN not found\n");
-        exit(1);
+        ExitError("MAIN not found");
     }
 
     if(!palettePresent)
@@ -698,15 +735,15 @@ Vox ReadVoxFile(char* fileName)
     if(file == NULL)
     {
         fprintf(stderr, "Failed to open file: %s\n", fileName);
-        exit(0);
+        exit(-1);
     }
 
     char header[5] = {0};
 
     fread(header, sizeof(char), 4, file);
 
-    if(strcmp(header, "VOX "))
-        fprintf(stderr, "This is not a VOX file\n");
+    if(TagCompare(header, "VOX"))
+        ExitError("This is not a VOX file\n");
 
     int version;
     fread(&version, sizeof(int), 1, file);
@@ -717,6 +754,9 @@ Vox ReadVoxFile(char* fileName)
     ReadMainChunk(file, &mainChunk, &childCount, &vox);
 
     fclose(file);
+
+    // printf("File read\n");
+    // exit(0);
 
     return vox;
 }

@@ -12,6 +12,12 @@ typedef struct Chunk {
     struct Chunk* childData;
 } Chunk;
 
+typedef struct Model {
+    int32_t id;
+    ivec3 size;
+    uint8_t* data;
+} Model;
+
 typedef struct __attribute__((packed))
 {
     uint8_t x;
@@ -30,8 +36,8 @@ typedef struct __attribute__((packed))
 
 typedef struct {
     ivec3 dimensions;
-    uint32_t count;
-    VoxelData* data;
+    size_t bufferSize;
+    uint8_t* data;
     VoxelColor* palette;
 } Vox;
 

@@ -63,6 +63,8 @@ int main(void)
         yaw -= dx * sensitivity;
         pitch -= dy * sensitivity;
 
+        pitch = glm_clamp(pitch, -1.5, 1.5);
+
         ubo.forward[0] = cos(pitch) * sin(yaw);
         ubo.forward[1] = sin(pitch);
         ubo.forward[2] = cos(pitch) * cos(yaw);
