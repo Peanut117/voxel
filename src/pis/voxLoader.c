@@ -56,9 +56,9 @@ typedef struct PACK_t {
 4        | int        | size z : gravity direction
 -------------------------------------------------------------------------------*/
 typedef struct SIZE_t {
-    int32_t x;
-    int32_t y;
-    int32_t z;
+    uint32_t x;
+    uint32_t y;
+    uint32_t z;
 } VoxSIZE_t;
 
 /*Chunk id 'XYZI' : model voxels, paired with the SIZE chunk
@@ -93,8 +93,8 @@ typedef struct RGBA_t {
 
 int32	: node id
 DICT	: node attributes
-	  (_name : string)
-	  (_hidden : 0/1)
+      (_name : string)
+      (_hidden : 0/1)
 int32 	: child node id
 int32 	: reserved id (must be -1)
 int32	: layer id
@@ -103,9 +103,9 @@ int32	: num of frames (must be greater than 0)
 // for each frame
 {
 DICT	: frame attributes
-	  (_r : int8)    ROTATION, see (c)
-	  (_t : int32x3) translation
-	  (_f : int32)   frame index, start from 0 
+      (_r : int8)    ROTATION, see (c)
+      (_t : int32x3) translation
+      (_f : int32)   frame index, start from 0 
 }xN */
 typedef struct nTRN_t {
     int32_t nodeId;
@@ -144,7 +144,7 @@ int32 	: num of models (must be greater than 0)
 {
 int32	: model id
 DICT	: model attributes : reserved
-	(_f : int32)   frame index, start from 0
+    (_f : int32)   frame index, start from 0
 }xN */
 typedef struct nSHP {
     int32_t nodeId;
@@ -156,14 +156,14 @@ typedef struct nSHP {
 
 /*int32	: material id
 DICT	: material properties
-	  (_type : str) _diffuse, _metal, _glass, _emit
-	  (_weight : float) range 0 ~ 1
-	  (_rough : float)
-	  (_spec : float)
-	  (_ior : float)
-	  (_att : float)
-	  (_flux : float)
-	  (_plastic)*/
+      (_type : str) _diffuse, _metal, _glass, _emit
+      (_weight : float) range 0 ~ 1
+      (_rough : float)
+      (_spec : float)
+      (_ior : float)
+      (_att : float)
+      (_flux : float)
+      (_plastic)*/
 typedef struct MATL {
     int32_t materialId;
     Dict_t materialProperties;
@@ -173,8 +173,8 @@ typedef struct MATL {
 
 int32	: layer id
 DICT	: layer attribute
-	  (_name : string)
-	  (_hidden : 0/1)
+      (_name : string)
+      (_hidden : 0/1)
 int32	: reserved id, must be -1*/
 typedef struct LAYR {
     int32_t layerId;
@@ -193,12 +193,12 @@ typedef struct rOBJ {
 
 int32	: camera id
 DICT	: camera attribute
-	  (_mode : string)
-	  (_focus : vec(3))
-	  (_angle : vec(3))
-	  (_radius : int)
-	  (_frustum : float)
-	  (_fov : int)  */
+      (_mode : string)
+      (_focus : vec(3))
+      (_angle : vec(3))
+      (_radius : int)
+      (_frustum : float)
+      (_fov : int)  */
 typedef struct rCAM {
     int32_t camID;
     Dict_t camAttr;
@@ -304,19 +304,19 @@ void PrintDict(Dict_t dict)
 size_t idx(int x, int y, int z, ivec3 size)
 {
     return (
-        x + 
-        y * size[0] + 
-        z * size[0]*size[1]
-    );
+    x + 
+    y * size[0] + 
+    z * size[0]*size[1]
+);
 }
 
 size_t idxV(VoxelData V, VoxSIZE_t size)
 {
     return (
-        V.x + 
-        V.y * size.x + 
-        V.z * size.x*size.y
-    );
+    V.x + 
+    V.y * size.x + 
+    V.z * size.x*size.y
+);
 }
 
 String_t ReadString(FILE* file)
@@ -383,6 +383,12 @@ VoxSIZE_t ReadSIZEChunk(FILE* file)
 {
     VoxSIZE_t SIZE;
     fread(&SIZE, sizeof(SIZE), 1, file);
+
+    // Swap z and y
+    int32_t temp;
+    temp = SIZE.y;
+    SIZE.y = SIZE.z;
+    SIZE.z = temp;
 
     return SIZE;
 }
@@ -561,165 +567,172 @@ bool ReadChunkHeader(FILE* file, Chunk* chunk)
     return true;
 }
 
-// Lasttag not used currently, remove if not needed later
-void ReadChildChunks(FILE* file, Chunk* chunk, Vox* vox, char* lastTag, bool* palettePresent)
+void ReadChildChunks(FILE* file, Vox* vox)
 {
-    if(!ReadChunkHeader(file, chunk))
-        return;
-
-    // printf("Current tag: ");
-    // PrintTag(chunk->tag);
-
-    if(TagCompare(chunk->tag, "PACK"))
-    {
-        // PACK_t PACK = ReadPACKChunk(file);
-        ExitError("Handle the PACK tag");
-    }
-    else if(TagCompare(chunk->tag, "SIZE"))
-    {
-        VoxSIZE_t SIZE = ReadSIZEChunk(file);
-
-        // Swap z and y
-        vox->dimensions[0] = SIZE.x;
-        vox->dimensions[1] = SIZE.z;
-        vox->dimensions[2] = SIZE.y;
-
-        // Folowed by chunk XYZI;
-        
-        ReadChunkHeader(file, chunk);
-
-        XYZI_t XYZI = ReadXYZIChunk(file);
-        if(!TagCompare(chunk->tag, "XYZI"))
-            ExitError("This tag should be XYZI");
-
-        vox->bufferSize = SIZE.x * SIZE.y * SIZE.z;
-
-        vox->data = malloc(vox->bufferSize);
-
-        for(size_t i = 0; i < XYZI.numVoxels; i++)
-        {
-            vox->data[idxV(XYZI.voxelData[i], SIZE)] = XYZI.voxelData[i].colorIndex;
-        }
-
-        CloseXYZIChunk(XYZI);
-    }
-    else if(TagCompare(chunk->tag, "RGBA"))
-    {
-        // Color pallet, should use a default one if not defined
-        RGBA_t RGBA = ReadRGBAChunk(file);
-        vox->palette = RGBA.palette;
-        *palettePresent = true;
-        CloseRGBAChunk(RGBA);
-    }
-    else if(TagCompare(chunk->tag, "nTRN"))
-    {
-        // Transform Node Chunk
-        nTRN_t nTRN = ReadnTRNChunk(file);
-
-        ClosenTRNChunk(nTRN);
-    }
-    else if(TagCompare(chunk->tag, "nGRP"))
-    {
-        nGRP_t nGRP = ReadnGRPChunk(file);
-
-        ClosenGRPChunk(nGRP);
-    }
-    else if(TagCompare(chunk->tag, "nSHP"))
-    {
-        nSHP_t nSHP = ReadnSHPChunk(file);
-
-        for(uint32_t i = 0; i < nSHP.numModels; i++)
-        {
-            printf("Model IDs: %d\n", nSHP.modelIds[i]);
-        }
-
-        ClosenSHPChunk(nSHP);
-    }
-    else if(TagCompare(chunk->tag, "LAYR"))
-    {
-        LAYR_t LAYR = ReadLAYRChunk(file);
-        CloseLAYRChunk(LAYR);
-    }
-    else if(TagCompare(chunk->tag, "MATL"))
-    {
-        MATL_t MATL = ReadMATLChunk(file);
-        CloseMATLChunk(MATL);
-    }
-    else if(TagCompare(chunk->tag, "rOBJ"))
-    {
-        rOBJ_t rOBJ = ReadrOBJChunk(file);
-
-        CloserOBJChunk(rOBJ);
-    }
-    else if(TagCompare(chunk->tag, "rCAM"))
-    {
-        rCAM_t rCAM = ReadrCAMChunk(file);
-        CloserCAMChunk(rCAM);
-    }
-    else if(TagCompare(chunk->tag, "NOTE"))
-    {
-        NOTE_t NOTE = ReadNOTEChunk(file);
-        CloseNOTEChunk(NOTE);
-    }
-    else {
-        fprintf(stderr, "Can't handle this tag: ");
-        PrintTag(chunk->tag);
-        printf("size: %d\nchild size: %d\n", chunk->size, chunk->childSize);
-        fseek(file, chunk->size, SEEK_CUR);
-        ExitError("oei");
-    }
-
-    strncpy(lastTag, chunk->tag, 4);
-}
-
-void ReadMainChunk(FILE* file, Chunk* chunk, uint32_t* childCount, Vox* vox)
-{
-    childCount = 0;
+    Chunk chunk;
     bool palettePresent = false;
 
-    if(!ReadChunkHeader(file, chunk))
+    // Save file position
+    unsigned long curFilePos = ftell(file);
+
+    // Calculate chunk amount
+    size_t tagCount = 0;
+    // Calculate amount of models in this scene
+    uint32_t modelCount = 0;
+    while(ReadChunkHeader(file, &chunk))
     {
-        ExitError("No data found");
+        if(TagCompare(chunk.tag, "SIZE"))
+            modelCount++;
+
+        fseek(file, chunk.size, SEEK_CUR);
+        tagCount++;
     }
 
-    if(TagCompare(chunk->tag, "MAIN"))
-    {
-        if(chunk->size > 0)
-            ExitError("MAIN has data, can't handle this");
+    // Put file pointer back at the start of the child chunks
+    fseek(file, curFilePos, SEEK_SET);
 
-        // Go into child chunks
-        if(chunk->childSize > 0)
+    size_t modelIndex = 0;
+    Model* models = malloc(sizeof(Model) * modelCount);
+    printf("Model count: %d\n", modelCount);
+
+    for(int i = 0; i < tagCount; i++)
+    {
+        if(!ReadChunkHeader(file, &chunk))
+            break;
+
+        // printf("Current tag: ");
+        // PrintTag(chunk.tag);
+
+        if(TagCompare(chunk.tag, "PACK"))
         {
-            unsigned long curFilePos = ftell(file);
-
-            // Calculate chunk amount
-            size_t tagCount = 0;
-            Chunk tagCounterChunk;
-            while(ReadChunkHeader(file, &tagCounterChunk))
-            {
-                fseek(file, tagCounterChunk.size, SEEK_CUR);
-                tagCount++;
-            }
-
-            // printf("%zu\n", tagCount);
-            fseek(file, curFilePos, SEEK_SET);
-
-            // Mallocate space for child chunks, this can be more
-            // Might just make this one chunk that get's reused, might not :)
-            chunk->childData = malloc(sizeof(Chunk) * tagCount);
-            char lastTag[4] = {0};
-            for(int i = 0; i < tagCount; i++)
-            {
-                ReadChildChunks(file, &chunk->childData[i], vox, lastTag, &palettePresent);
-                childCount++;
-            }
-
-            free(chunk->childData);
+            /*=========================Handle PACK tag=======================*/
+            // PACK_t PACK = ReadPACKChunk(file);
+            ExitError("Handle the PACK tag");
         }
-    } else {
-        ExitError("MAIN not found");
-    }
+        else if(TagCompare(chunk.tag, "SIZE"))
+        {
+            /*=========================Handle SIZE tag and XYZI tag=======================*/
+            VoxSIZE_t SIZE = ReadSIZEChunk(file);
 
+            models[modelIndex].size[0] = SIZE.x;
+            models[modelIndex].size[1] = SIZE.y;
+            models[modelIndex].size[2] = SIZE.z;
+
+            // Folowed by chunk XYZI;
+
+            ReadChunkHeader(file, &chunk);
+
+            if(!TagCompare(chunk.tag, "XYZI"))
+                ExitError("This tag should be XYZI");
+
+            XYZI_t XYZI = ReadXYZIChunk(file);
+
+            models[modelIndex].id = modelIndex;
+            models[modelIndex].data = malloc(SIZE.x * SIZE.y * SIZE.z);
+
+            for(size_t i = 0; i < XYZI.numVoxels; i++)
+            {
+                models[modelIndex].data[idxV(XYZI.voxelData[i], SIZE)] = XYZI.voxelData[i].colorIndex;
+            }
+
+            modelIndex++;
+
+            CloseXYZIChunk(XYZI);
+        }
+        else if(TagCompare(chunk.tag, "RGBA"))
+        {
+            /*=========================Handle RGBA tag=======================*/
+            // Color pallet, should use a default one if not defined
+            RGBA_t RGBA = ReadRGBAChunk(file);
+            vox->palette = RGBA.palette;
+            palettePresent = true;
+            CloseRGBAChunk(RGBA);
+        }
+        else if(TagCompare(chunk.tag, "nTRN"))
+        {
+            /*=========================Handle nTRN tag=======================*/
+            // Transform Node Chunk
+            nTRN_t nTRN = ReadnTRNChunk(file);
+
+            ClosenTRNChunk(nTRN);
+        }
+        else if(TagCompare(chunk.tag, "nGRP"))
+        {
+            /*=========================Handle nGRP tag=======================*/
+            nGRP_t nGRP = ReadnGRPChunk(file);
+
+            ClosenGRPChunk(nGRP);
+        }
+        else if(TagCompare(chunk.tag, "nSHP"))
+        {
+            /*=========================Handle nSHP tag=======================*/
+            nSHP_t nSHP = ReadnSHPChunk(file);
+
+            ClosenSHPChunk(nSHP);
+        }
+        else if(TagCompare(chunk.tag, "LAYR"))
+        {
+            /*=========================Handle LAYR tag=======================*/
+            LAYR_t LAYR = ReadLAYRChunk(file);
+            CloseLAYRChunk(LAYR);
+        }
+        else if(TagCompare(chunk.tag, "MATL"))
+        {
+            /*=========================Handle MATL tag=======================*/
+            MATL_t MATL = ReadMATLChunk(file);
+            CloseMATLChunk(MATL);
+        }
+        else if(TagCompare(chunk.tag, "rOBJ"))
+        {
+            /*=========================Handle rOBJ tag=======================*/
+            rOBJ_t rOBJ = ReadrOBJChunk(file);
+
+            CloserOBJChunk(rOBJ);
+        }
+        else if(TagCompare(chunk.tag, "rCAM"))
+        {
+            /*=========================Handle rCAM tag=======================*/
+            rCAM_t rCAM = ReadrCAMChunk(file);
+            CloserCAMChunk(rCAM);
+        }
+        else if(TagCompare(chunk.tag, "NOTE"))
+        {
+            /*=========================Handle NOTE tag=======================*/
+            NOTE_t NOTE = ReadNOTEChunk(file);
+            CloseNOTEChunk(NOTE);
+        }
+        else {
+            fprintf(stderr, "Can't handle this tag: ");
+            PrintTag(chunk.tag);
+            printf("size: %d\nchild size: %d\n", chunk.size, chunk.childSize);
+            fseek(file, chunk.size, SEEK_CUR);
+            ExitError("oei");
+        }
+    }
+    // End for loop
+
+    // Get max size
+    // ivec3 maxSize = {0};
+    // for(size_t i = 0; i < modelCount; i++)
+    // {
+    //     models[modelCount].size[0] = glm_max(models[modelCount].size[0], maxSize)
+    // }
+    //
+    // // Put data into readable array
+    // for(size_t i = 0; i < modelCount; i++)
+    // {
+    // }
+
+
+    Model model = models[0];
+    vox->dimensions[0] = model.size[0];
+    vox->dimensions[1] = model.size[1];
+    vox->dimensions[2] = model.size[2];
+    vox->bufferSize = model.size[0] * model.size[1] * model.size[2];
+    vox->data = malloc(vox->bufferSize);
+    memcpy(vox->data, model.data, vox->bufferSize);
+
+    // If no palette found in file, get main palette
     if(!palettePresent)
     {
         vox->palette = malloc(4 * 256);
@@ -727,10 +740,33 @@ void ReadMainChunk(FILE* file, Chunk* chunk, uint32_t* childCount, Vox* vox)
     }
 }
 
+void ReadMainChunk(FILE* file, Vox* vox)
+{
+    Chunk chunk;
+    if(!ReadChunkHeader(file, &chunk))
+    {
+        ExitError("No data found");
+    }
+
+    if(TagCompare(chunk.tag, "MAIN"))
+    {
+        if(chunk.size > 0)
+            ExitError("MAIN has data, can't handle this");
+
+        // Go into main child chunk
+        if(chunk.childSize > 0)
+        {
+            ReadChildChunks(file, vox);
+        }
+    }
+    else { ExitError("MAIN not found"); }
+}
+
 Vox ReadVoxFile(char* fileName)
 {
     Vox vox;
 
+    // Open the file
     FILE* file = fopen(fileName, "r");
     if(file == NULL)
     {
@@ -738,24 +774,24 @@ Vox ReadVoxFile(char* fileName)
         exit(-1);
     }
 
+    // Read the header
     char header[5] = {0};
-
     fread(header, sizeof(char), 4, file);
 
     if(TagCompare(header, "VOX"))
         ExitError("This is not a VOX file\n");
 
+    // Read the version
     int version;
     fread(&version, sizeof(int), 1, file);
     // printf("VOX version: %d\n", version);
 
-    uint32_t childCount;
-    Chunk mainChunk;
-    ReadMainChunk(file, &mainChunk, &childCount, &vox);
+    // Read main chunk and all it's children
+    ReadMainChunk(file, &vox);
 
     fclose(file);
 
-    // printf("File read\n");
+    printf("File read\n");
     // exit(0);
 
     return vox;
@@ -763,6 +799,6 @@ Vox ReadVoxFile(char* fileName)
 
 void CloseVoxFile(Vox vox)
 {
-    free(vox.palette);
-    free(vox.data);
+    // free(vox.palette);
+    // free(vox.data);
 }

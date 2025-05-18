@@ -9,12 +9,12 @@ typedef struct Chunk {
     char tag[4];
     uint32_t size;
     uint32_t childSize;
-    struct Chunk* childData;
 } Chunk;
 
 typedef struct Model {
     int32_t id;
-    ivec3 size;
+    uint32_t size[3];
+    uint32_t translation[3];
     uint8_t* data;
 } Model;
 
