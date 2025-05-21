@@ -3,20 +3,19 @@
 
 #include <stdbool.h>
 
-#include "volk.h"
+#include "vulkan/volk.h"
 #include "vulkan/vulkan_core.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 
-#include "pipelines.h"
-#include "descriptors.h"
-#include "images.h"
-#include "buffers.h"
+#include "vulkan/pipelines.h"
+#include "vulkan/descriptors.h"
+#include "vulkan/images.h"
+#include "vulkan/buffers.h"
 
-#include "voxLoader.h"
+#include "pisVoxReader.h"
 
 #include "cglm/cglm.h"
-
 
 typedef struct UniformBufferObject {
     vec3 position;  float _pad1;
@@ -59,8 +58,6 @@ typedef struct PisVulkanInstance {
     AllocatedImage drawImage;
     VkExtent2D drawExtent;
 
-    AllocatedImage voxelImage;
-
     QueueFamilyIndices indices;
     VkQueue computeQueue;
 
@@ -69,6 +66,7 @@ typedef struct PisVulkanInstance {
     Descriptor descriptor;
 
     Buffer uboBuffer;
+    Buffer voxelBuffer;
     Buffer paletteBuffer;
 
     FrameData* frames;
@@ -85,7 +83,7 @@ typedef struct PisEngine {
     bool stopRendering;
     VkExtent2D windowExtent;
     char voxelFile[128];
-    Vox voxelData;
+    PisVox voxelData;
 } PisEngine;
 
 void PisEngineInitialize(PisEngine* pis);

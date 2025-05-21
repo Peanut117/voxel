@@ -8,19 +8,20 @@
 
 #include "engine.h"
 
-#include "buffers.h"
-#include "command_buffer.h"
-#include "descriptors.h"
-#include "swapchain.h"
-#include "validationlayers.h"
-#include "initializers.h"
-#include "pipelines.h"
-#include "descriptors.h"
-#include "images.h"
-#include "pisdef.h"
+#include "vulkan/buffers.h"
+#include "vulkan/command_buffer.h"
+#include "vulkan/descriptors.h"
+#include "vulkan/misc.h"
+#include "pisVoxReader.h"
+#include "vulkan/swapchain.h"
+#include "vulkan/validationlayers.h"
+#include "vulkan/initializers.h"
+#include "vulkan/pipelines.h"
+#include "vulkan/descriptors.h"
+#include "vulkan/images.h"
+#include "vulkan/pisdef.h"
 
-#include "volk.h"
-#include "voxLoader.h"
+#include "vulkan/volk.h"
 #include "vulkan/vulkan_core.h"
 
 /* ===================================Functions==================================== */
@@ -35,7 +36,7 @@ void InitVoxelData(PisEngine* pis);
 void InitDrawImage(PisEngine* pis);
 void InitPaletteBuffer(PisEngine* pis);
 void InitUniformBuffers(PisEngine* pis);
-void InitVoxelImage(PisEngine* pis);
+void InitVoxelBuffer(PisEngine* pis);
 
 void InitDescriptors(PisEngine* pis);
 void InitCommands(PisEngine* pis);
@@ -71,7 +72,7 @@ void PisEngineInitialize(PisEngine* pis)
 
     InitCommands(pis);
 
-    InitVoxelImage(pis);
+    InitVoxelBuffer(pis);
 
     InitDescriptors(pis);
 
@@ -183,8 +184,6 @@ void PisEngineCleanup(PisEngine* pis)
 {
     VkDevice device = pis->vk.device;
 
-    CloseVoxFile(pis->voxelData);
-
     vkDeviceWaitIdle(device);
 
     vkDestroyDescriptorPool(device, pis->vk.descriptor.pool, NULL);
@@ -200,13 +199,12 @@ void PisEngineCleanup(PisEngine* pis)
     vkDestroyBuffer(device, pis->vk.paletteBuffer.buffer, NULL);
     vkFreeMemory(device, pis->vk.paletteBuffer.memory, NULL);
 
+    vkDestroyBuffer(device, pis->vk.voxelBuffer.buffer, NULL);
+    vkFreeMemory(device, pis->vk.voxelBuffer.memory, NULL);
+
     vkDestroyImageView(device, pis->vk.drawImage.view, NULL);
     vkDestroyImage(device, pis->vk.drawImage.image, NULL);
     vkFreeMemory(device, pis->vk.drawImage.memory, NULL);
-
-    vkDestroyImageView(device, pis->vk.voxelImage.view, NULL);
-    vkDestroyImage(device, pis->vk.voxelImage.image, NULL);
-    vkFreeMemory(device, pis->vk.voxelImage.memory, NULL);
 
     for(uint32_t i = 0; i < pis->vk.swapchainImageCount; i++)
     {
@@ -262,7 +260,7 @@ void InitWindow(PisEngine* pis, uint32_t windowWidth, uint32_t windowHeight)
 
 void InitVoxelData(PisEngine* pis)
 {
-    pis->voxelData = ReadVoxFile(pis->voxelFile);
+    pis->voxelData = PisVoxReadFromFile("/Users/nielsbil/Dev/VoxToPisVox/model.pisv");
 }
 
 void InitDrawImage(PisEngine* pis)
@@ -271,71 +269,31 @@ void InitDrawImage(PisEngine* pis)
     CreateDrawImages(pis, pis->windowExtent.width, pis->windowExtent.height);
 }
 
-void InitVoxelImage(PisEngine* pis)
+void InitVoxelBuffer(PisEngine* pis)
 {
-    Buffer stagingBuffer;
+    VkDeviceSize voxelDataSize = 256*256*256;
 
-    CreateBuffer(pis->vk.device, pis->vk.physicalDevice,
-                 pis->voxelData.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 &stagingBuffer);
+    VkDeviceSize bufferSize = voxelDataSize;
+    CreateBuffer(pis->vk.device, pis->vk.physicalDevice, bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pis->vk.voxelBuffer);
 
-    VK_CHECK(vkMapMemory(pis->vk.device, stagingBuffer.memory, 0, pis->voxelData.bufferSize, 0, &stagingBuffer.ptr));
-        memcpy(stagingBuffer.ptr, pis->voxelData.data, (size_t)pis->voxelData.bufferSize);
-    vkUnmapMemory(pis->vk.device, stagingBuffer.memory);
+    pis->vk.voxelBuffer.ptr = malloc(bufferSize);
 
-    // Create images to draw to
-    VkExtent3D voxelImageExtent = {
-        pis->voxelData.dimensions[0],
-        pis->voxelData.dimensions[1],
-        pis->voxelData.dimensions[2],
-    };
-
-    pis->vk.voxelImage.format = VK_FORMAT_R8_UINT;
-    pis->vk.voxelImage.extent = voxelImageExtent;
-
-    VkImageUsageFlags voxelImageUsages = {0};
-	voxelImageUsages |= VK_IMAGE_USAGE_STORAGE_BIT;
-	voxelImageUsages |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-    CreateImage(pis->vk.device, pis->vk.physicalDevice,
-                pis->vk.voxelImage.format,
-                VK_IMAGE_TYPE_3D,
-                voxelImageUsages, pis->vk.voxelImage.extent,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                &pis->vk.voxelImage.image,
-                &pis->vk.voxelImage.memory);
-
-    VkCommandBuffer cmd = BeginSingleTimeCommands(pis->vk.device, pis->vk.frames[0].commandPool);
-
-    TransitionImage(cmd, pis->vk.voxelImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    VkBufferImageCopy copyRegion = BufferImageCopyInfo(VK_IMAGE_ASPECT_COLOR_BIT, voxelImageExtent);
-    vkCmdCopyBufferToImage(cmd, stagingBuffer.buffer, pis->vk.voxelImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           1, &copyRegion);
-    TransitionImage(cmd, pis->vk.voxelImage.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-
-    EndSingleTimeCommands(cmd, pis->vk.device, pis->vk.frames[0].commandPool, pis->vk.computeQueue);
-
-    vkDestroyBuffer(pis->vk.device, stagingBuffer.buffer, NULL);
-    vkFreeMemory(pis->vk.device, stagingBuffer.memory, NULL);
-
-    VkImageViewCreateInfo imgViewInfo = ImageViewCreateInfo(pis->vk.voxelImage.format,
-                                                            VK_IMAGE_VIEW_TYPE_3D,
-                                                            pis->vk.voxelImage.image,
-                                                            VK_IMAGE_ASPECT_COLOR_BIT);
-    VK_CHECK(vkCreateImageView(pis->vk.device, &imgViewInfo, NULL, &pis->vk.voxelImage.view));
+    VK_CHECK(vkMapMemory(pis->vk.device, pis->vk.voxelBuffer.memory, 0, voxelDataSize, 0, &pis->vk.voxelBuffer.ptr));
+        memcpy(pis->vk.voxelBuffer.ptr, pis->voxelData.voxels, (size_t)bufferSize);
+    vkUnmapMemory(pis->vk.device, pis->vk.voxelBuffer.memory);
 }
 
 void InitPaletteBuffer(PisEngine* pis)
 {
-    VkDeviceSize bufferSize = 4 * 256;
+    VkDeviceSize bufferSize = sizeof(Material) * 256;
     CreateBuffer(pis->vk.device, pis->vk.physicalDevice, bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pis->vk.paletteBuffer);
 
     pis->vk.paletteBuffer.ptr = malloc(bufferSize);
     
     VK_CHECK(vkMapMemory(pis->vk.device, pis->vk.paletteBuffer.memory, 0, bufferSize, 0, &pis->vk.paletteBuffer.ptr));
-        memcpy(pis->vk.paletteBuffer.ptr, pis->voxelData.palette, (size_t)bufferSize);
+        memcpy(pis->vk.paletteBuffer.ptr, pis->voxelData.materials, (size_t)bufferSize);
     vkUnmapMemory(pis->vk.device, pis->vk.paletteBuffer.memory);
 }
 
@@ -362,7 +320,7 @@ void InitDescriptors(PisEngine* pis)
     descriptorLayouts[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
     descriptorLayouts[0].descriptorCount = 1;
 
-    descriptorLayouts[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    descriptorLayouts[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     descriptorLayouts[1].binding = 1;
     descriptorLayouts[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
     descriptorLayouts[1].descriptorCount = 1;
@@ -383,10 +341,10 @@ void InitDescriptors(PisEngine* pis)
     VkDescriptorPoolSize poolSizes[3];
 
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    poolSizes[0].descriptorCount = 2;
+    poolSizes[0].descriptorCount = 1;
 
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[1].descriptorCount = 1;
+    poolSizes[1].descriptorCount = 2;
 
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[2].descriptorCount = 1;
@@ -409,16 +367,16 @@ void InitDescriptors(PisEngine* pis)
     writeSets[0].pImageInfo = &drawImgInfo;
     writeSets[0].descriptorCount = 1;
 
-    VkDescriptorImageInfo voxelImgInfo = {0};
-    voxelImgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    voxelImgInfo.imageView = pis->vk.voxelImage.view;
-    voxelImgInfo.sampler = VK_NULL_HANDLE;
+    VkDescriptorBufferInfo voxelBufferInfo = {0};
+    voxelBufferInfo.buffer = pis->vk.voxelBuffer.buffer;
+    voxelBufferInfo.offset = 0;
+    voxelBufferInfo.range = pis->vk.voxelBuffer.size;
 
     writeSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeSets[1].dstSet = pis->vk.descriptor.set;
     writeSets[1].dstBinding = 1;
-    writeSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    writeSets[1].pImageInfo = &voxelImgInfo;
+    writeSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeSets[1].pBufferInfo = &voxelBufferInfo;
     writeSets[1].descriptorCount = 1;
 
     VkDescriptorBufferInfo paletteBufferInfo = {0};

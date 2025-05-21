@@ -7,7 +7,9 @@ layout (local_size_x = 16, local_size_y = 16) in;
 //descriptor bindings for the pipeline
 layout(binding = 0, rgba16f) uniform writeonly image2D image;
 
-layout(binding = 1, r8ui) uniform readonly uimage3D voxelData;
+layout(binding = 1, std430) buffer voxelDataBuffer {
+    uint voxelData[];
+};
 
 layout(binding = 2, std430) buffer PaletteData {
     uint palette[];
@@ -48,11 +50,11 @@ struct Material {
     vec4 color;
 };
 
-ivec3 gridSize = imageSize(voxelData);
+ivec3 gridSize = ivec3(256);
 vec2 imageSize = imageSize(image);
 
-const float EPSILON = 1e-2;
-const uint MAX_STEPS = 256;
+const float EPSILON = 1e-4;
+const uint MAX_STEPS = 512;
 const uint MAX_BOUNCES = 2;
 
 const vec3 LIGHT_DIR = normalize(vec3(-5.0, 5.0, -3));
@@ -93,6 +95,24 @@ vec4 unpackColor(uint packed)
     );
 }
 
+uint idx(vec3 voxel)
+{
+    return uint(
+        voxel.x + 
+        voxel.y * 256 + 
+        voxel.z * 256*256
+    );
+}
+
+uint unpackVoxelData(vec3 voxel)
+{
+    uint index = idx(voxel);
+
+    uint uintIndex = index/4;
+    uint uintOffset = index%4;
+
+    return uint((voxelData[uintIndex] >> (uintOffset * 8)) & 0xFF);
+}
 
 float hash1() {
     return fract(sin(seed += 0.1)*43758.5453123);
@@ -150,7 +170,7 @@ RayHitInternal traceRayInternal(Ray ray)
             break;
         }
 
-        result.material = imageLoad(voxelData, voxel).r;
+        result.material = unpackVoxelData(voxel);
         if(result.material != 0)
         {
             break;

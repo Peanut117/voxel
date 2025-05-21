@@ -36,19 +36,15 @@ int main(void)
     pis->windowExtent.height = 720;
 
     strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
-    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#odyssey/#odyssey_scene.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/character/chr_fox.vox");
-    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/castle.vox");
-    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/Church_Of_St_Sophia.vox");
-    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/nuke.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/scan/dragon.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Dev/voxel/models/ground.vox");
 
     PisEngineInitialize(pis);
 
     const bool* keys = SDL_GetKeyboardState(NULL);
 
-    glm_vec3((vec3){pis->voxelData.dimensions[0]/2.f,
-                    pis->voxelData.dimensions[1]/2.f, -2}, ubo.position);
+    glm_vec3((vec3){128, 128, -2}, ubo.position);
 
     SDL_SetWindowRelativeMouseMode(pis->window, true);
     float pitch = 0.f, yaw = 0.f;
