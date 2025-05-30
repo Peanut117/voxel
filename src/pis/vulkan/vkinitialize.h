@@ -3,4 +3,8 @@
 
 #include "volk.h"
 
+#include "../engine.h"
+
+void InitVulkan(PisEngine* pis);
+
 #endif

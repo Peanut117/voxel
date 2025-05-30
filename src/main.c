@@ -23,6 +23,8 @@ bool processInput(PisEngine* pis)
     return true;
 }
 
+// Add seperate window for debugging?
+
 int main(void)
 {
     PisEngine* pis = calloc(1, sizeof(PisEngine));
@@ -34,8 +36,9 @@ int main(void)
 
     pis->windowExtent.width = 1280;
     pis->windowExtent.height = 720;
-
-    strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Dev/voxel/models/ground.pisv");
+    strcpy(pis->voxelFile, "/Users/nielsbil/Dev/voxel/models/treehouse.pisv");
+    // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/#treehouse/#treehouse.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/character/chr_fox.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Downloads/vox/scan/dragon.vox");
     // strcpy(pis->voxelFile, "/Users/nielsbil/Dev/voxel/models/ground.vox");

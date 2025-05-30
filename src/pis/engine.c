@@ -9,9 +9,7 @@
 #include "engine.h"
 
 #include "vulkan/buffers.h"
-#include "vulkan/command_buffer.h"
 #include "vulkan/descriptors.h"
-#include "vulkan/misc.h"
 #include "pisVoxReader.h"
 #include "vulkan/swapchain.h"
 #include "vulkan/validationlayers.h"
@@ -260,7 +258,7 @@ void InitWindow(PisEngine* pis, uint32_t windowWidth, uint32_t windowHeight)
 
 void InitVoxelData(PisEngine* pis)
 {
-    pis->voxelData = PisVoxReadFromFile("/Users/nielsbil/Dev/VoxToPisVox/model.pisv");
+    pis->voxelData = PisVoxReadFromFile(pis->voxelFile);
 }
 
 void InitDrawImage(PisEngine* pis)

@@ -3,7 +3,6 @@
 #include "vkinitialize.h"
 
 #include "pisdef.h"
-#include "../engine.h"
 #include "swapchain.h"
 #include "validationlayers.h"
 
